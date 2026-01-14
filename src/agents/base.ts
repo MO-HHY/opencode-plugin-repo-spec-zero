@@ -2,7 +2,7 @@
  * Base Agent Classes
  */
 
-import type { AgentContext, AgentResult } from '@opencode-ai/plugin';
+import type { AgentContext, AgentResult } from '../types.js';
 
 /**
  * Skill executor interface
@@ -22,12 +22,37 @@ export abstract class BaseAgent {
     abstract readonly triggers: RegExp[];
 
     protected skills: Map<string, SkillExecutor> = new Map();
+    protected subAgents: SubAgent[] = [];
 
     registerSkill(skillId: string, executor: SkillExecutor): void {
         this.skills.set(skillId, executor);
+        // Propagate to sub-agents
+        for (const subAgent of this.subAgents) {
+            subAgent.registerSkill(skillId, executor);
+        }
+    }
+
+    registerSubAgent(subAgent: SubAgent): void {
+        subAgent.setParent(this);
+        this.subAgents.push(subAgent);
+        // Inherit
+        for (const [skillId, executor] of this.skills.entries()) {
+            subAgent.registerSkill(skillId, executor);
+        }
     }
 
     abstract process(context: AgentContext): Promise<AgentResult>;
+}
+
+/**
+ * Abstract base class for sub-agents (e.g. specialized agents)
+ */
+export abstract class SubAgent extends BaseAgent {
+    protected parentAgent: BaseAgent | null = null;
+
+    setParent(parent: BaseAgent): void {
+        this.parentAgent = parent;
+    }
 }
 
 /**

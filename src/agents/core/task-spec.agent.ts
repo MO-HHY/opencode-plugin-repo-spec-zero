@@ -1,5 +1,5 @@
 import { BaseAgent } from '../base.js';
-import type { AgentContext, AgentResult } from '@opencode-ai/plugin';
+import type { AgentContext, AgentResult } from '../../types.js';
 
 export class TaskSpecAgent extends BaseAgent {
     readonly id = 'task-spec';

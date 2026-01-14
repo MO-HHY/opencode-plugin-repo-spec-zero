@@ -1,5 +1,5 @@
 import type { Plugin, PluginInput, Hooks } from '@opencode-ai/plugin';
-import { AgentRegistry } from './agents/base.js';
+import { AgentRegistry, SkillExecutor } from './agents/base.js';
 
 // Skills
 import { SpecZeroDetectionSkill } from './skills/spec-zero-detection.skill.js';
@@ -38,23 +38,19 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
 
-    // We need to wrap skills in a universal executor interface if we strictly follow BaseAgent
-    // Or we adapt BaseAgent to accept these classes directly. 
-    // For now, let's wrap them in simple objects that match SkillExecutor interface { execute: ... }
-    // Or better, let's ensure our skills implement `execute` or we provide an adapter.
-    // AnalyzeContextSkill has `analyze` method. output-writer has `createStructure`.
-    // We should create simple adapters to register them as 'skills' for the agents.
+    // We need to wrap skills in a universal executor interface.
+    // Specifying <any> return type for flexibility with strict interface checks.
 
     const analyzeSkillOriginal = new AnalyzeContextSkill(process.env.ANTHROPIC_API_KEY, console);
-    const analyzeSkillExecutor = {
-        execute: async (params: any) => {
+    const analyzeSkillExecutor: SkillExecutor = {
+        execute: async (params: any): Promise<any> => {
             return await analyzeSkillOriginal.analyze(params.prompt, params.repoStructure, params.prevContext);
         }
     };
 
     const writerSkillOriginal = new OutputWriterSkill();
-    const writerSkillExecutor = {
-        execute: async (params: any) => {
+    const writerSkillExecutor: SkillExecutor = {
+        execute: async (params: any): Promise<any> => {
             // If the agent calls this, it probably expects to just pass content?
             // But orchestrator calls OutputWriterSkill directly for creating structure.
             // Agents might need a way to write their own files.
@@ -77,8 +73,8 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     };
 
     const treeSkill = new BuildRepoTreeSkill();
-    const treeSkillExecutor = {
-        execute: async (params: any) => {
+    const treeSkillExecutor: SkillExecutor = {
+        execute: async (params: any): Promise<any> => {
             return treeSkill.generateTree(params.repoPath);
         }
     };
@@ -135,7 +131,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     return {
         tool: {
             // Main entry point
-            'repo_spec_zero_analyze': async (params: { repoUrl?: string, taskId?: string }) => {
+            'repo_spec_zero_analyze': async (params: { repoUrl?: string, taskId?: string }): Promise<any> => {
                 // Create context with client
                 const context = {
                     client,
@@ -147,10 +143,10 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
             },
 
             // Expose internal tools for debugging or direct use
-            'repo_spec_zero_detect_type': async ({ repoPath }: { repoPath: string }) => {
+            'repo_spec_zero_detect_type': async ({ repoPath }: { repoPath: string }): Promise<any> => {
                 return await detectionSkill.detect(repoPath);
             },
-        },
+        } as any,
         // Event handling
         event: async ({ event }) => {
             if (event.type === 'session.created') {

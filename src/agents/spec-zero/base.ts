@@ -1,12 +1,12 @@
-import { BaseAgent } from '../base.js';
-import type { AgentContext, AgentResult } from '@opencode-ai/plugin';
+import { BaseAgent, SubAgent } from '../base.js';
+import type { AgentContext, AgentResult } from '../../types.js';
 import type { AnalyzeContextSkill } from '../../skills/analyze-context.skill.js';
 import type { OutputWriterSkill } from '../../skills/output-writer.skill.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CONFIG } from '../../core/config.js';
 
-export abstract class RepoSpecZeroAgent extends BaseAgent {
+export abstract class RepoSpecZeroAgent extends SubAgent {
     abstract readonly promptFile: string;
     abstract readonly contextDeps: string[];
     abstract readonly outputFile: string;

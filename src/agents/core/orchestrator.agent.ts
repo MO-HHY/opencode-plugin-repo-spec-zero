@@ -1,5 +1,5 @@
 import { BaseAgent } from '../base.js';
-import type { AgentContext, AgentResult } from '@opencode-ai/plugin';
+import type { AgentContext, AgentResult } from '../../types.js';
 import { SpecZeroDetectionSkill } from '../../skills/spec-zero-detection.skill.js';
 import { GitSkill } from '../../skills/git.skill.js';
 import { TaskSpecAgent } from './task-spec.agent.js';
