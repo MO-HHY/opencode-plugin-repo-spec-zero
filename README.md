@@ -1,6 +1,6 @@
 # RepoSpecZero Plugin 🕵️‍♂️
 
-**RepoSpecZero** (`opencode-plugin-repo-spec-zero`) is a powerful **Agentic Swarm** plugin for OpenCode that autonomously analyzes codebases and generates **SPEC-OS** compatible specifications ("Spec Zero").
+**RepoSpecZero** (`@mo-hhy/opencode-plugin-repo-spec-zero`) is a powerful **Agentic Swarm** plugin for OpenCode that autonomously analyzes codebases and generates **SPEC-OS** compatible specifications ("Spec Zero").
 
 > **Part of the [HANDHY SPEC-OS](https://github.com/MO-HHY/HANDHY-SPEC-OS) Ecosystem.**
 
@@ -16,51 +16,56 @@
 
 ### Prerequisites
 *   **OpenCode** installed.
-*   **Anthropic API Key** configured in your environment.
+*   **Anthropic API Key**: Required for the deep analysis agents.
 
-### 1. Install via `opencode.json`
+### Option 1: Install from GitHub Packages (Recommended)
 
-Add the plugin to your OpenCode workspace configuration:
+Add the plugin to your `opencode.json` configuration. You may need to configure your `.npmrc` to authenticate with GitHub Packages if the package is private.
 
 ```json
 {
   "plugin": [
-    "opencode-plugin-repo-spec-zero"
+    "@mo-hhy/opencode-plugin-repo-spec-zero"
   ]
 }
 ```
 
-### 2. Manual Installation (Development)
+### Option 2: Local Development
 
-Build the plugin locally and link it:
+1.  **Clone** the repository:
+    ```bash
+    git clone https://github.com/MO-HHY/opencode-plugin-repo-spec-zero.git
+    cd opencode-plugin-repo-spec-zero
+    ```
+
+2.  **Install & Build**:
+    ```bash
+    npm install
+    npm run build
+    ```
+
+3.  **Link**:
+    Update your `opencode.json` to point to the local directory or use `npm link`.
+
+## ⚙️ Configuration
+
+Ensure your OpenCode environment (or `.env` file) has the following variable:
 
 ```bash
-git clone https://github.com/MO-HHY/opencode-plugin-repo-spec-zero.git
-cd opencode-plugin-repo-spec-zero
-npm install
-npm run build
+ANTHROPIC_API_KEY=sk-ant-...
 ```
-
-Then reference the local path in your `opencode.json` or use `npm link`.
 
 ## 🛠 Usage
 
-### 1. Analyze a Repository (URL)
-Ask OpenCode to analyze a public GitHub repository:
+### Analyze a Public Repository
+Ask OpenCode to analyze a GitHub repository directly:
 
 > "Analyze repo https://github.com/username/project"
 
-### 2. Analyze a ClickUp Task
-If you use the `activity-register` plugin, you can process a task directly:
+### Analyze a ClickUp Task
+If you use the `activity-register` plugin, you can process a task directly. The orchestrator will extract the repository URL from the task description:
 
 > "Analyze task CLK-1234"
-
-The Orchestrator will:
-1.  Fetch the repo URL from the task description.
-2.  Clone the repo to a temp workspace.
-3.  Run the 17-agent swarm.
-4.  Generate the spec.
-5.  Update the ClickUp task with the result.
 
 ## 🏗 Architecture
 
@@ -73,7 +78,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed diagrams and inter
 
 ## 📦 Output Structure
 
-The plugin generates a `spec-zero` compatible folder:
+The plugin generates a `spec-zero` compatible folder structure:
 
 ```
 {project}-spec/
