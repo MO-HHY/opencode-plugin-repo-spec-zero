@@ -208,7 +208,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     await client.tui.showToast({
                         body: {
                             title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin is ready.',
+                            message: 'Repo Spec Zero Plugin v0.1.6 is ready.',
                             variant: 'info',
                             duration: 3000,
                         },
