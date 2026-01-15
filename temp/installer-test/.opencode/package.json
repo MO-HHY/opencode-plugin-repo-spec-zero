@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@mo-hhy/opencode-plugin-repo-spec-zero": "^0.1.0",
+    "@opencode-ai/plugin": "latest"
+  }
+}

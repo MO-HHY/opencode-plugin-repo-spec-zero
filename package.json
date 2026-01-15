@@ -11,6 +11,9 @@
             "types": "./dist/index.d.ts"
         }
     },
+    "bin": {
+        "repo-spec-zero": "./dist/bin/install.js"
+    },
     "files": [
         "dist/",
         "README.md",
@@ -23,6 +26,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "verify": "tsx scripts/verify-swarm.ts",
+        "verify:installer": "tsx scripts/verify-installer.ts",
         "prepublishOnly": "npm run build && npm test"
     },
     "engines": {

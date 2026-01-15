@@ -47,6 +47,16 @@ Add the plugin to your `opencode.json` configuration. You may need to configure 
 3.  **Link**:
     Update your `opencode.json` to point to the local directory or use `npm link`.
 
+### Option 3: Automated Installer (Zero Config)
+
+Run this command in any OpenCode workspace root to automatically configure the plugin:
+
+```bash
+npx @mo-hhy/opencode-plugin-repo-spec-zero install
+```
+
+This will set up your `.opencode` folder and `opencode.json` automatically.
+
 ## ⚙️ Configuration
 
 No additional configuration is required. The plugin inherits the LLM settings from your OpenCode environment.
