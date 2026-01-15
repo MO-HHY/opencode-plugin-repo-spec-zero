@@ -97,8 +97,6 @@ export default plugin;
         log('Creating opencode.json...');
         const config = {
             "$schema": "https://raw.githubusercontent.com/opencode-ai/opencode/main/schemas/opencode.schema.json",
-            "name": "HANDHY SPEC-OS",
-            "description": "Knowledge Graph OS for Technical Documentation",
             "plugin": []
             // We intentionally leave plugin empty or add the relative path?
             // The loader is in .opencode/plugin/repo-spec-zero.ts.

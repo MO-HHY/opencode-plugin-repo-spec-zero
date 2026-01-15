@@ -6,7 +6,8 @@
 - [x] **Native LLM Integration**: Replaced `@anthropic-ai/sdk` with `client.llm.chat`.
 - [x] **Visible Swarm**: Orchestrator now emits Toast notifications for every agent's execution.
 - [x] **Dependency Cleanups**: Removed `ANTHROPIC_API_KEY` requirement and SDK dependency.
-- [x] **Verification**: Verified using `scripts/verify-swarm.ts` on the plugin's own repo.
+- [x] **Verification**: Verified using `scripts/verify-swarm.ts`.
+- [x] **NPM Installer**: Added `npx ... install` mode for zero-config setup.
 
 ## 🏗 Key Changes
 
@@ -28,33 +29,21 @@ The `RepoSpecZeroOrchestrator` now keeps the user informed:
 ```typescript
 await this.notify(client, `[${index}/${total}] Activating ${agent.name}...`, 'info');
 ```
-Errors are handled gracefully without crashing the entire swarm:
-```typescript
-try {
-    const result = await agent.process(context);
-} catch (e) {
-    await this.notify(client, `❌ Agent crashed: ${e.message}`, 'error');
-}
-```
 
-### 3. Build & Dependencies Changes
-- **Removed**: `@anthropic-ai/sdk`
-- **Updated**: `package.json` now includes `verify` script.
-- **Fixed**: `SkillResult` typing across the codebase.
+### 3. NPM Installer (`src/bin/install.ts`)
+A new CLI entry point allows installing the plugin into any workspace without cloning the repo.
+- **Command**: `npx @mo-hhy/opencode-plugin-repo-spec-zero install`
+- **Logic**: Automatically creates `.opencode` folder, `.npmrc`, loader file, and `opencode.json`.
 
 ## 🧪 Verification
 
-A dedicated verification script was created: `scripts/verify-swarm.ts`.
-It mocks the OpenCode environment and runs the full 17-agent swarm on the repository itself.
+### Swarm Verification
+Run `npm run verify` to test the full 17-agent swarm logic on the repo itself.
 
-**Result**:
-```
-[Orchestrator] Starting analysis with 17 agents...
-[MockToast] INFO: [1/17] Activating Overview Analysis...
-[MockLLM] Processing prompt...
-...
-Orchestrator Finished: { success: true, ... }
-```
+### Installer Verification
+Run `npm run verify:installer` to test the `npx install` logic (folder generation).
 
 ## 🚀 Next Steps
-The plugin is ready for release/deployment. No API keys are needed. Just install and run via `Analyze repo ...`.
+The plugin is ready for release.
+1.  **Publish**: `npm publish` (to GitHub Packages)
+2.  **Use**: `npx @mo-hhy/opencode-plugin-repo-spec-zero install` in any target repo.
