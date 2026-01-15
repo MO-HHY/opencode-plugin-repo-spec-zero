@@ -4,6 +4,7 @@ import type { AgentContext, AgentResult } from '../../types.js';
 import type { OutputWriterSkill } from '../../skills/output-writer.skill.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { CONFIG } from '../../core/config.js';
 
 export abstract class RepoSpecZeroAgent extends SubAgent {
@@ -111,27 +112,45 @@ export abstract class RepoSpecZeroAgent extends SubAgent {
     }
 
     private loadPrompt(repoType: string, filename: string): string {
-        // Try specific type first
-        // Assuming prompts are copied to `dist/prompts` or `prompts` in root
-        // In development, it's `prompts` in root.
-        const rootDir = process.cwd(); // Should be plugin root
-        const typePath = path.join(rootDir, CONFIG.PROMPTS_DIR, repoType, filename);
-        const genericPath = path.join(rootDir, CONFIG.PROMPTS_DIR, 'generic', filename);
-        // Also check shared folder if filename starts with "../shared" (which some do in the plan/legacy)
-        // The plan lists "hl_overview.md". The legacy `base_prompts.json` had `"../shared/hl_overview.md"`.
-        // I should probably normalize this. 
-        // If the filename passed is just "hl_overview.md", I look in type/hl_overview.md.
-        // If the legacy structure used shared, I should probably have flat "generic" folder or similar.
-        // Let's try to find it.
+        // Resolve plugin root directory relative to this file
+        // dist/agents/spec-zero/base.js -> ../../../ -> root
+        // src/agents/spec-zero/base.ts -> ../../../ -> root
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        const rootDir = path.resolve(__dirname, '../../../../');
+
+        // Note: In some build setups, dist/ might vary, so we might need robust check. 
+        // But assuming standard tsc output matching src structure:
+        // src/agents/spec-zero/base.ts -> 3 levels down from src, which is 1 level from root = 4 levels?
+        // src/agents/spec-zero/base.ts -> spec-zero(1) -> agents(2) -> src(3) -> root(4)? No.
+        // path.dirname(base.ts) = spec-zero. 
+        // spec-zero -> agents -> src -> root. That is 3 ".." jumps.
+        // Let's verify: 
+        // /root/src/agents/spec-zero/base.ts
+        // path.dirname = /root/src/agents/spec-zero
+        // resolve(.., '..') = /root/src/agents
+        // resolve(.., '../..') = /root/src
+        // resolve(.., '../../..') = /root
+
+        // However, if we are in dist/agents/spec-zero/base.js:
+        // /root/dist/agents/spec-zero/base.js
+        // Same depth.
+
+        // If prompts are in /root/prompts:
+        const promptsDir = path.join(rootDir, 'prompts'); // CONFIG.PROMPTS_DIR might be 'prompts'
+        const typePath = path.join(promptsDir, repoType, filename);
+        const genericPath = path.join(promptsDir, 'generic', filename);
+        const sharedPath = path.join(promptsDir, 'shared', filename);
 
         if (fs.existsSync(typePath)) return fs.readFileSync(typePath, 'utf-8');
         if (fs.existsSync(genericPath)) return fs.readFileSync(genericPath, 'utf-8');
-
-        // Try 'shared' directory if it exists
-        const sharedPath = path.join(rootDir, CONFIG.PROMPTS_DIR, 'shared', filename);
         if (fs.existsSync(sharedPath)) return fs.readFileSync(sharedPath, 'utf-8');
 
-        throw new Error(`Prompt file ${filename} not found for type ${repoType} or generic`);
+        // Fallback: Check if we are in dev mode or structure is different (e.g. prompts copied to dist)
+        // Try resolving from process.cwd temporarily if the above fails, mainly for local testing if links are weird?
+        // No, we want to ABOLISH process.cwd dependency.
+
+        throw new Error(`Prompt file ${filename} not found in ${promptsDir} (checked: ${typePath}, ${genericPath}, ${sharedPath})`);
     }
 
     private buildContext(allResults: Record<string, string>): string {

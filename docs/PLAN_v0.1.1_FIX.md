@@ -5,6 +5,12 @@
     -   *Root Cause*: The plugin likely registers agents/tools but the internal binding to the `execute` method in `src/index.ts` or the wrapper class is malformed. OpenCode expects a specific signature for tools.
 2.  **Missing Agent Definition**: The user wants a static agent definition in `opencode.json` (like `orchestrator`) that is aware of the plugin's capabilities and acts as the interface.
 
+## 🔎 Additional findings (parity sub-agents/delega)
+- Prompt loading usa `process.cwd()` (tipicamente il repo analizzato) invece della root del plugin ⇒ prompt non trovati in “install mode”.
+- Output dir naming incoerente: ``${projectSlug}-spec`` vs ``${projectSlug} -spec`` ⇒ audit/spec in cartelle diverse.
+- Manca un tool di delega/routing e tool per invocare i sub-agent come in `spec-os`.
+- Piano dettagliato: `docs/DELEGATION_PARITY_PLAN.md`.
+
 ## 🎯 Goals (v0.1.1)
 1.  **Fix Tool Registration**: Ensure `execute` is correctly bound for all exposed tools.
 2.  **Expose Static Agent**: Add a `repo-spec-zero` agent definition to the plugin's `opencode.json` template (in the installer) and document it.

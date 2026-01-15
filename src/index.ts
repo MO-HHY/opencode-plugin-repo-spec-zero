@@ -96,6 +96,73 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     // Also register skills to orchestrator
     orchestrator.registerSkill('repo_spec_zero_build_tree', treeSkillExecutor);
 
+    // 4. Build Agent Tools Dynamic Map
+    const agentTools: Record<string, any> = {};
+
+    specAgents.forEach(agent => {
+        const toolName = `repo_spec_zero_agent_${agent.id}`;
+        agentTools[toolName] = {
+            description: `[Agent] ${agent.name}: ${agent.description}`,
+            args: {
+                projectSlug: z.string().describe('Project slug (e.g. my-repo).').optional(),
+                baseDir: z.string().describe('Base directory of the repo analysis (where output goes).').optional(),
+                repoStructure: z.string().describe('Repository file structure string.').optional(),
+                repoType: z.string().describe('Detected repository type.').optional(),
+                contextData: z.string().describe('JSON string of previous agent results if needed.').optional()
+            },
+            execute: async (params: any): Promise<any> => {
+                const context = {
+                    client,
+                    params: {
+                        ...params,
+                        // Default to cwd/temp if basic params missing? 
+                        // Agents rely on baseDir/projectSlug to write.
+                        // If not provided, we might fail or default.
+                        baseDir: params.baseDir || process.cwd(),
+                        projectSlug: params.projectSlug || 'unknown-manual-run'
+                    },
+                    messages: [],
+                    intent: { name: agent.id, confidence: 1.0 }
+                };
+                return await agent.process(context as any);
+            }
+        };
+    });
+
+    // 5. Delegation Tool
+    const delegationTool = {
+        'repo_spec_zero_delegate': {
+            description: 'Delegate a request to a specific SpecZero sub-agent or the orchestrator.',
+            args: {
+                query: z.string().describe('The user query or intent.'),
+                preferredAgent: z.string().describe('ID of the agent to delegate to (e.g. "overview", "api").').optional(),
+                repoPath: z.string().describe('Path to the repo to contextuaize.').optional()
+            },
+            execute: async ({ query, preferredAgent, repoPath }: { query: string; preferredAgent?: string; repoPath?: string }): Promise<any> => {
+
+                // If preferred agent exists, call it
+                if (preferredAgent) {
+                    const toolName = `repo_spec_zero_agent_${preferredAgent}`;
+                    if (agentTools[toolName]) {
+                        return await agentTools[toolName].execute({
+                            baseDir: repoPath,
+                            projectSlug: repoPath ? 'unknown-delegated' : undefined
+                        });
+                    }
+                    return { success: false, message: `Agent ${preferredAgent} not found.` };
+                }
+
+                // Fallback: analyze request to pick agent (Simple Router)
+                // For now, just return list of agents suggestions
+                const validAgents = specAgents.map(a => a.id).join(', ');
+                return {
+                    success: false,
+                    message: `Auto-routing not yet implemented. Please specify 'preferredAgent'. Available: ${validAgents}`
+                };
+            }
+        }
+    };
+
     return {
         tool: {
             // Main entry point
@@ -127,6 +194,12 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     return await detectionSkill.detect(repoPath);
                 }
             },
+
+            // Sub-Agent Tools
+            ...agentTools,
+
+            // Delegation Tool
+            ...delegationTool
         },
         // Event handling
         event: async ({ event }) => {

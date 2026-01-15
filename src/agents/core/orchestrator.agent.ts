@@ -183,7 +183,7 @@ Duration: ${Math.round(totalDuration / 1000)} s
     ${executionLog.map(l => `| ${l.agent} | ${l.status === 'success' ? '✅ Success' : '❌ Failed'} | ${l.durationMs}ms | ${l.message || ''} |`).join('\n')}
 `;
 
-        const auditPath = path.join(workDir, `${projectSlug} -spec`, '_meta', 'analysis_audit.md');
+        const auditPath = path.join(workDir, `${projectSlug}-spec`, '_meta', 'analysis_audit.md');
         // Ensure dir exists
         if (!fs.existsSync(path.dirname(auditPath))) {
             fs.mkdirSync(path.dirname(auditPath), { recursive: true });
@@ -197,10 +197,15 @@ Duration: ${Math.round(totalDuration / 1000)} s
             await this.taskSpecAgent.updateProgress(taskId, 'review', 'Analysis complete. Spec generated.', context);
         }
 
-        const outputDir = path.join(workDir, `${projectSlug} -spec`);
+        const outputDir = path.join(workDir, `${projectSlug}-spec`);
+
+        // Ensure standard output dirs exist even if empty
+        fs.mkdirSync(path.join(outputDir, 'analysis'), { recursive: true });
+        fs.mkdirSync(path.join(outputDir, '_meta'), { recursive: true });
+
         return {
             success: true,
-            message: `Analysis Complete.Spec generated at ${outputDir} `,
+            message: `Analysis Complete. Spec generated at ${outputDir} `,
             data: {
                 specDir: outputDir,
                 repoType
