@@ -107,15 +107,18 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     return {
         tool: {
             // Main entry point
-            'repo_spec_zero_analyze': async (params: { repoUrl?: string, taskId?: string }): Promise<any> => {
-                // Create context with client
-                const context = {
-                    client,
-                    params,
-                    messages: [], // Empty for tool call
-                    intent: { name: 'analyze_repo', confidence: 1.0 }
-                };
-                return await orchestrator.process(context as any);
+            'repo_spec_zero_analyze': {
+                description: 'Analyze a repository to generate Spec Zero documentation.',
+                execute: async (params: { repoUrl?: string, taskId?: string }): Promise<any> => {
+                    // Create context with client
+                    const context = {
+                        client,
+                        params,
+                        messages: [], // Empty for tool call
+                        intent: { name: 'analyze_repo', confidence: 1.0 }
+                    };
+                    return await orchestrator.process(context as any);
+                }
             },
 
             // Expose internal tools for debugging or direct use

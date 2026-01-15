@@ -1,9 +1,10 @@
-import { BaseAgent } from '../base.js';
+import { BaseAgent, SubAgent } from '../base.js';
 import type { AgentContext, AgentResult } from '../../types.js';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SpecZeroDetectionSkill } from '../../skills/spec-zero-detection.skill.js';
 import { GitSkill } from '../../skills/git.skill.js';
 import { TaskSpecAgent } from './task-spec.agent.js';
-import * as path from 'path';
 import { CONFIG } from '../../core/config.js';
 
 // Import all SpecZero Agents (we will need to register them or import them here to instantiate sub-agents)
@@ -50,9 +51,9 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             }
             repoUrl = taskResult.data.repoUrl;
             if (!repoUrl) {
-                return { success: false, message: `Could not find repo URL in task ${taskId}` };
+                return { success: false, message: `Could not find repo URL in task ${taskId} ` };
             }
-            await this.notify(client, `Found valid Repo URL: ${repoUrl}`);
+            await this.notify(client, `Found valid Repo URL: ${repoUrl} `);
         }
 
         // 2. Clone Repo
@@ -63,13 +64,13 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         try {
             await this.gitSkill.cloneOrUpdate(repoUrl, workDir);
         } catch (e: any) {
-            return { success: false, message: `Clone failed: ${e.message}` };
+            return { success: false, message: `Clone failed: ${e.message} ` };
         }
 
         // 3. Detect Type
         await this.notify(client, `Detecting repository type...`);
         const repoType = await this.detectionSkill.detect(workDir);
-        await this.notify(client, `Detected type: ${repoType}`);
+        await this.notify(client, `Detected type: ${repoType} `);
 
         // Generate directory structure
         const currentDir = process.cwd();
@@ -85,21 +86,26 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         // We need to order them based on `contextDeps`.
         // Let's create a map of id -> agent
         const agentMap = new Map(this.subAgents.map(a => [a.id, a]));
-        const results: Record<string, string> = {};
+        // Initialize execution log
+        const executionLog: Array<{ agent: string, status: 'success' | 'failed', durationMs: number, message?: string }> = [];
+        const startTime = Date.now();
 
+        // 3. Execute Agents via Topological Sort
+        const results: Record<string, string> = {};
         const executionOrder = this.getExecutionOrder(this.subAgents);
 
-        await this.notify(client, `Starting analysis with ${executionOrder.length} agents...`);
-
-        // 5. Execute Swarm
         let index = 0;
         for (const agentId of executionOrder) {
             index++;
             const agent = agentMap.get(agentId);
             if (!agent) continue;
 
-            // Notify UI - Start
-            await this.notify(client, `[${index}/${executionOrder.length}] Activating ${agent.name}...`);
+            const agentStart = Date.now();
+            await this.notify(client, `[${index}/${executionOrder.length}] Activating ${agent.name}...`, 'info');
+
+            // Pass accumulated results to next agent
+            // Also pass `repoStructure` and `projectSlug` which are in `context.params`
+            // But we need to ensure they are propagated explicitly or via `params`.
 
             const agentParams = {
                 repoStructure,
@@ -110,8 +116,7 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             };
 
             // DEBUG LOG
-            // DEBUG LOG
-            // console.log(`[DEBUG] Agent Params for ${agent.name}:`, JSON.stringify({ ...agentParams, repoStructure: agentParams.repoStructure ? "HAS_CONTENT" : "EMPTY" }, null, 2));
+            // console.log(`[DEBUG] Agent Params for ${ agent.name }: `, JSON.stringify({ ...agentParams, repoStructure: agentParams.repoStructure ? "HAS_CONTENT" : "EMPTY" }, null, 2));
 
             const agentContext: AgentContext = {
                 ...context,
@@ -120,19 +125,54 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
 
             try {
                 const result = await agent.process(agentContext);
+                const duration = Date.now() - agentStart;
 
                 if (!result.success) {
-                    // Notify UI - Failure (Warn only, don't crash swarm)
-                    await this.notify(client, `⚠️ Agent ${agent.name} failed: ${result.message}`, 'warning');
+                    await this.notify(client, `⚠️ Agent ${agent.name} failed: ${result.message} `, 'warning');
+                    executionLog.push({ agent: agent.name, status: 'failed', durationMs: duration, message: result.message });
                 } else {
-                    // Notify UI - Success
-                    // await this.notify(client, `✅ ${agent.name} complete.`); // Optional: too noisy? Let's keep it clean.
-                    results[agentId] = result.data.output;
+                    // results[agentId] = result.data.output; // Assuming data.output is the string content
+                    // The result.data could be complex object returned by `RepoSpecZeroAgent`
+                    // In `base.ts`, it returns { output: string, path: string }
+                    if (result.data && typeof result.data === 'object' && 'output' in result.data) {
+                        results[agentId] = (result.data as any).output;
+                    } else {
+                        results[agentId] = JSON.stringify(result.data);
+                    }
+                    executionLog.push({ agent: agent.name, status: 'success', durationMs: duration });
                 }
-            } catch (error: any) {
-                await this.notify(client, `❌ Agent ${agent.name} crashed: ${error.message}`, 'error');
+            } catch (e: any) {
+                const duration = Date.now() - agentStart;
+                await this.notify(client, `❌ Agent ${agent.name} crashed: ${e.message} `, 'error');
+                executionLog.push({ agent: agent.name, status: 'failed', durationMs: duration, message: e.message });
             }
         }
+
+        // 4. Generate Audit Log
+        const totalDuration = Date.now() - startTime;
+        const auditContent = `# Analysis Audit Log
+Date: ${new Date().toISOString()}
+Repo: ${projectSlug}
+Duration: ${Math.round(totalDuration / 1000)} s
+
+## Execution Summary
+    - Total Agents: ${executionOrder.length}
+- Executed: ${executionLog.length}
+- Success: ${executionLog.filter(l => l.status === 'success').length}
+- Failed: ${executionLog.filter(l => l.status === 'failed').length}
+
+## Details
+    | Agent | Status | Duration | Message |
+| -------| --------| ----------| ---------|
+    ${executionLog.map(l => `| ${l.agent} | ${l.status === 'success' ? '✅ Success' : '❌ Failed'} | ${l.durationMs}ms | ${l.message || ''} |`).join('\n')}
+`;
+
+        const auditPath = path.join(workDir, `${projectSlug} -spec`, '_meta', 'analysis_audit.md');
+        // Ensure dir exists
+        if (!fs.existsSync(path.dirname(auditPath))) {
+            fs.mkdirSync(path.dirname(auditPath), { recursive: true });
+        }
+        fs.writeFileSync(auditPath, auditContent);
 
         if (taskId) {
             await this.notify(client, `Updating ClickUp task ${taskId}...`);
@@ -141,10 +181,10 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             await this.taskSpecAgent.updateProgress(taskId, 'review', 'Analysis complete. Spec generated.', context);
         }
 
-        const outputDir = path.join(workDir, `${projectSlug}-spec`);
+        const outputDir = path.join(workDir, `${projectSlug} -spec`);
         return {
             success: true,
-            message: `Analysis Complete. Spec generated at ${outputDir}`,
+            message: `Analysis Complete.Spec generated at ${outputDir} `,
             data: {
                 specDir: outputDir,
                 repoType
@@ -158,7 +198,7 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
     }
 
     private async notify(client: any, message: string, variant: 'info' | 'success' | 'warning' | 'error' = 'info') {
-        console.log(`[Orchestrator] ${message}`);
+        console.log(`[Orchestrator] ${message} `);
         if (client && client.tui && client.tui.showToast) {
             try {
                 await client.tui.showToast({

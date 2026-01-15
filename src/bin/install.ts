@@ -97,7 +97,15 @@ export default plugin;
         log('Creating opencode.json...');
         const config = {
             "$schema": "https://raw.githubusercontent.com/opencode-ai/opencode/main/schemas/opencode.schema.json",
-            "plugin": []
+            "plugin": [],
+            "agent": {
+                "repo-spec-zero": {
+                    "model": "antigravity-gemini-3-flash",
+                    "mode": "primary",
+                    "description": "RepoSpecZero: Autonomous Spec Analysis Swarm.",
+                    "prompt": "You are RepoSpecZero, an autonomous swarm for analyzing codebases.\n\nYour primary tool is `repo_spec_zero_analyze`. \n\nWHEN USER ASKS TO ANALYZE A REPO:\n1. Call `repo_spec_zero_analyze` with the target path (or current directory).\n2. Wait for the result.\n3. Summarize the findings based on the generated spec.\n\nDO NOT attempt to read files manually unless the swarm fails."
+                }
+            }
             // We intentionally leave plugin empty or add the relative path?
             // The loader is in .opencode/plugin/repo-spec-zero.ts.
             // OpenCode usually auto-discovers .opencode/plugin/*.ts if "plugin" is NOT specified or matches pattern.
