@@ -1,6 +1,6 @@
 import { BaseAgent, SubAgent } from '../base.js';
 import type { AgentContext, AgentResult } from '../../types.js';
-import type { AnalyzeContextSkill } from '../../skills/analyze-context.skill.js';
+
 import type { OutputWriterSkill } from '../../skills/output-writer.skill.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -53,16 +53,28 @@ export abstract class RepoSpecZeroAgent extends SubAgent {
 
             // However, `BaseAgent` structure in `base.ts` has `protected skills: Map<string, SkillExecutor>`.
             // Let's use that.
-            const analyzeExecutor = this.skills.get('repo_spec_zero_analyze_context');
-            if (!analyzeExecutor) {
-                return { success: false, message: 'Analyze skill not found' };
+            // 3. Execute Analysis (using NativeLLMSkill)
+            const nativeLLM = this.skills.get('native_llm');
+            if (!nativeLLM) {
+                return { success: false, message: 'Native LLM skill not found' };
             }
 
-            const analysisResult = await analyzeExecutor.execute<string>({
-                prompt: promptContent,
-                repoStructure,
-                prevContext: previousContext
+            // Prepare combined user prompt (Context + Tree)
+            let userPrompt = `Repository Structure:\n${repoStructure}\n`;
+            if (previousContext) {
+                userPrompt += `\nPrevious Analysis Context:\n${previousContext}\n`;
+            }
+
+            // Execute via SkillExecutor interface
+            const analysisResultRaw = await nativeLLM.execute<string>({
+                systemPrompt: promptContent,
+                userPrompt: userPrompt
             });
+
+            if (!analysisResultRaw.success || !analysisResultRaw.data) {
+                throw new Error(analysisResultRaw.error || "Empty response from Native LLM");
+            }
+            const analysisResult = analysisResultRaw.data;
 
             // 4. Write Output
             const writerExecutor = this.skills.get('repo_spec_zero_write_output');

@@ -76,7 +76,8 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         const treeExecutor = this.skills.get('repo_spec_zero_build_tree');
         let repoStructure = "";
         if (treeExecutor) {
-            repoStructure = await treeExecutor.execute<string>({ repoPath: workDir });
+            const treeResult = await treeExecutor.execute<string>({ repoPath: workDir });
+            repoStructure = treeResult.data || "";
         }
 
         // 4. Execution Plan (Topological Sort)
@@ -97,33 +98,39 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             const agent = agentMap.get(agentId);
             if (!agent) continue;
 
-            await this.notify(client, `[${index}/${executionOrder.length}] Running ${agent.name}...`);
-
-            // Pass results of dependencies
-            // `process` method signature: (context)
-            // We need to inject params into a new context or pass them somehow.
-            // BaseAgent.process takes context.
+            // Notify UI - Start
+            await this.notify(client, `[${index}/${executionOrder.length}] Activating ${agent.name}...`);
 
             const agentParams = {
                 repoStructure,
                 projectSlug,
-                baseDir: workDir, // Write spec into temp dir for now? Or where? plan says `{project}-spec/`.
+                baseDir: workDir,
                 repoType,
                 allResults: results
             };
+
+            // DEBUG LOG
+            // DEBUG LOG
+            // console.log(`[DEBUG] Agent Params for ${agent.name}:`, JSON.stringify({ ...agentParams, repoStructure: agentParams.repoStructure ? "HAS_CONTENT" : "EMPTY" }, null, 2));
 
             const agentContext: AgentContext = {
                 ...context,
                 params: agentParams
             };
 
-            const result = await agent.process(agentContext);
-            if (!result.success) {
-                await this.notify(client, `⚠️ Agent ${agent.name} failed: ${result.message}`);
-                // define if we abort or continue?
-                // continue for now
-            } else {
-                results[agentId] = result.data.output;
+            try {
+                const result = await agent.process(agentContext);
+
+                if (!result.success) {
+                    // Notify UI - Failure (Warn only, don't crash swarm)
+                    await this.notify(client, `⚠️ Agent ${agent.name} failed: ${result.message}`, 'warning');
+                } else {
+                    // Notify UI - Success
+                    // await this.notify(client, `✅ ${agent.name} complete.`); // Optional: too noisy? Let's keep it clean.
+                    results[agentId] = result.data.output;
+                }
+            } catch (error: any) {
+                await this.notify(client, `❌ Agent ${agent.name} crashed: ${error.message}`, 'error');
             }
         }
 
@@ -150,12 +157,12 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         return parts[parts.length - 1].replace('.git', '');
     }
 
-    private async notify(client: any, message: string) {
-        console.log(message);
+    private async notify(client: any, message: string, variant: 'info' | 'success' | 'warning' | 'error' = 'info') {
+        console.log(`[Orchestrator] ${message}`);
         if (client && client.tui && client.tui.showToast) {
             try {
                 await client.tui.showToast({
-                    body: { title: 'RepoSpecZero', message, variant: 'info', duration: 3000 }
+                    body: { title: 'RepoSpecZero', message, variant, duration: 3000 }
                 });
             } catch (e) {
                 // ignore

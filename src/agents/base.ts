@@ -5,10 +5,20 @@
 import type { AgentContext, AgentResult } from '../types.js';
 
 /**
+ * Skill result interface
+ */
+export interface SkillResult<T = unknown> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    metadata?: Record<string, unknown>;
+}
+
+/**
  * Skill executor interface
  */
 export interface SkillExecutor {
-    execute<T = unknown>(params: Record<string, unknown>): Promise<T>;
+    execute<T = unknown>(params: Record<string, unknown>): Promise<SkillResult<T>>;
 }
 
 /**

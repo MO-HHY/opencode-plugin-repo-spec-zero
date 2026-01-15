@@ -16,7 +16,7 @@
 
 ### Prerequisites
 *   **OpenCode** installed.
-*   **Anthropic API Key**: Required for the deep analysis agents.
+*   **No API Keys Required**: Uses the native OpenCode LLM configuration.
 
 ### Option 1: Install from GitHub Packages (Recommended)
 
@@ -49,11 +49,7 @@ Add the plugin to your `opencode.json` configuration. You may need to configure 
 
 ## ⚙️ Configuration
 
-Ensure your OpenCode environment (or `.env` file) has the following variable:
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
-```
+No additional configuration is required. The plugin inherits the LLM settings from your OpenCode environment.
 
 ## 🛠 Usage
 

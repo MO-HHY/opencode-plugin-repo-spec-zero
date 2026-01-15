@@ -3,7 +3,7 @@ import { AgentRegistry, SkillExecutor } from './agents/base.js';
 
 // Skills
 import { SpecZeroDetectionSkill } from './skills/spec-zero-detection.skill.js';
-import { AnalyzeContextSkill } from './skills/analyze-context.skill.js';
+import { NativeLLMSkill } from './skills/native-llm.skill.js';
 import { BuildRepoTreeSkill } from './skills/build-repo-tree.skill.js';
 import { OutputWriterSkill } from './skills/output-writer.skill.js';
 import { GitSkill } from './skills/git.skill.js';
@@ -38,36 +38,11 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
 
-    // We need to wrap skills in a universal executor interface.
-    // Specifying <any> return type for flexibility with strict interface checks.
-
-    const analyzeSkillOriginal = new AnalyzeContextSkill(process.env.ANTHROPIC_API_KEY, console);
-    const analyzeSkillExecutor: SkillExecutor = {
-        execute: async (params: any): Promise<any> => {
-            return await analyzeSkillOriginal.analyze(params.prompt, params.repoStructure, params.prevContext);
-        }
-    };
+    const nativeLLMSkill = new NativeLLMSkill(client);
 
     const writerSkillOriginal = new OutputWriterSkill();
     const writerSkillExecutor: SkillExecutor = {
         execute: async (params: any): Promise<any> => {
-            // If the agent calls this, it probably expects to just pass content?
-            // But orchestrator calls OutputWriterSkill directly for creating structure.
-            // Agents might need a way to write their own files.
-            // RepoSpecZeroAgent.process logic: 
-            // const writerExecutor = this.skills.get('repo_spec_zero_write_output');
-            // But we actually implemented the file writing INSIDE RepoSpecZeroAgent.process using fs directly!
-            // So we don't strictly need this skill registered for the agent to WRITE.
-            // But let's check RepoSpecZeroAgent.process again.
-            // It does: `const writerExecutor = this.skills.get('repo_spec_zero_write_output');`
-            // Wait, I wrote: "Let's implement writing logic here using OutputWriterSkill logic... or we do it here. I'll add a helper to write the file."
-            // And then I actually implemented `fs.writeFileSync` directly in the `try/catch` block.
-            // So I don't strictly use the skill executor in the final code I pushed. 
-            // BUT I do have: `const writerExecutor = this.skills.get('repo_spec_zero_write_output');` checking if it exists?
-            // Actually, in the code I pushed for `src/agents/spec-zero/base.ts`:
-            // `const writerExecutor = this.skills.get('repo_spec_zero_write_output');`
-            // It fetches it but doesn't assume it exists 100% or use it. It mostly proceeds to write using `fs`.
-            // So this is fine.
             return { success: true };
         }
     };
@@ -75,7 +50,8 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     const treeSkill = new BuildRepoTreeSkill();
     const treeSkillExecutor: SkillExecutor = {
         execute: async (params: any): Promise<any> => {
-            return treeSkill.generateTree(params.repoPath);
+            const tree = await treeSkill.generateTree(params.repoPath);
+            return { success: true, data: tree };
         }
     };
 
@@ -115,7 +91,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
 
     specAgents.forEach(agent => {
         // Register required skills
-        agent.registerSkill('repo_spec_zero_analyze_context', analyzeSkillExecutor);
+        agent.registerSkill('native_llm', nativeLLMSkill);
         agent.registerSkill('repo_spec_zero_write_output', writerSkillExecutor);
 
         // Register as sub-agent
