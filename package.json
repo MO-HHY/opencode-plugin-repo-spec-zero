@@ -25,8 +25,8 @@
         "watch": "tsc -w",
         "test": "vitest run",
         "test:watch": "vitest",
-        "verify": "tsx scripts/verify-swarm.ts",
-        "verify:installer": "tsx scripts/verify-installer.ts",
+        "verify": "node scripts/run-tsx.mjs scripts/verify-swarm.ts",
+        "verify:installer": "node scripts/run-tsx.mjs scripts/verify-installer.ts",
         "prepublishOnly": "npm run build && npm test"
     },
     "engines": {

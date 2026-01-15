@@ -34,12 +34,16 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         const { client } = context;
         const params = context.params || {};
 
-        // 1. Resolve Input (TaskId or RepoUrl)
-        let repoUrl = params.repoUrl as string;
-        let taskId = params.taskId as string;
+        console.log('[Orchestrator] Processing with params:', JSON.stringify(params));
 
-        if (!repoUrl && !taskId) {
-            return { success: false, message: 'Please provide `taskId` (ClickUp) or `repoUrl`.' };
+        // 1. Resolve Input (TaskId or RepoUrl)
+        let repoUrl = params.repoUrl as string | undefined;
+        let taskId = params.taskId as string | undefined;
+        let repoPath = (params.repoPath || params.path || params.repoDir) as string | undefined;
+
+        // Default to current working directory for local analysis.
+        if (!repoUrl && !taskId && !repoPath) {
+            repoPath = process.cwd();
         }
 
         // If taskId provided, fetch repoUrl
@@ -56,15 +60,27 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             await this.notify(client, `Found valid Repo URL: ${repoUrl} `);
         }
 
-        // 2. Clone Repo
-        const projectSlug = this.getSlug(repoUrl);
-        const workDir = path.join(process.cwd(), CONFIG.TEMP_DIR, projectSlug);
+        // 2. Resolve working directory (local path or cloned repo)
+        let projectSlug: string;
+        let workDir: string;
 
-        await this.notify(client, `Cloning ${repoUrl} to ${workDir}...`);
-        try {
-            await this.gitSkill.cloneOrUpdate(repoUrl, workDir);
-        } catch (e: any) {
-            return { success: false, message: `Clone failed: ${e.message} ` };
+        if (repoPath) {
+            workDir = path.resolve(repoPath);
+            projectSlug = path.basename(workDir) || 'unknown-repo';
+            if (!fs.existsSync(workDir)) {
+                return { success: false, message: `Local path does not exist: ${workDir}` };
+            }
+            await this.notify(client, `Analyzing local repository: ${workDir}`);
+        } else {
+            projectSlug = this.getSlug(repoUrl);
+            workDir = path.join(process.cwd(), CONFIG.TEMP_DIR, projectSlug);
+
+            await this.notify(client, `Cloning ${repoUrl} to ${workDir}...`);
+            try {
+                await this.gitSkill.cloneOrUpdate(repoUrl as string, workDir);
+            } catch (e: any) {
+                return { success: false, message: `Clone failed: ${e.message} ` };
+            }
         }
 
         // 3. Detect Type
@@ -192,9 +208,12 @@ Duration: ${Math.round(totalDuration / 1000)} s
         };
     }
 
-    private getSlug(url: string): string {
-        const parts = url.split('/');
-        return parts[parts.length - 1].replace('.git', '');
+    private getSlug(url: string | undefined | null): string {
+        const safeUrl = String(url || '');
+        if (!safeUrl || safeUrl === 'undefined') return 'unknown-repo';
+        // Handle file paths
+        const lastPart = safeUrl.split('/').pop() || 'unknown-repo';
+        return lastPart.replace('.git', '');
     }
 
     private async notify(client: any, message: string, variant: 'info' | 'success' | 'warning' | 'error' = 'info') {

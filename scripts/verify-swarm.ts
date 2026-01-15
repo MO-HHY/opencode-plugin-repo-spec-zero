@@ -111,11 +111,7 @@ async function main() {
     const context = {
         client: mockClient,
         params: {
-            repoUrl: 'https://github.com/MO-HHY/opencode-plugin-repo-spec-zero.git', // Dummy URL to trigger clone/update (or we rely on local existence if GitSkill handles it)
-            // Ideally we point to a local path or skip cloning if we hack the orchestrator, 
-            // but let's let it try to "clone" (gitSkill might fail if URL is dummy, but we passed a real one above in main or we can use the local path).
-            // Actually Orchestrator does `git clone`. We might want to pass a "skipClone" param or just let it clone into temp.
-            // Let's use the real GitHub URL we just pushed to!
+            repoPath: process.cwd(), // Analyze myself (local path, no cloning required)
         }
     };
 

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { Plugin, PluginInput, Hooks } from '@opencode-ai/plugin';
 import { AgentRegistry, SkillExecutor } from './agents/base.js';
 
@@ -37,10 +38,9 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
 
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
-
     const nativeLLMSkill = new NativeLLMSkill(client);
 
-    const writerSkillOriginal = new OutputWriterSkill();
+    // Writer Skill Executor (Mock for internal writes, but orchestrated via Node fs usually)
     const writerSkillExecutor: SkillExecutor = {
         execute: async (params: any): Promise<any> => {
             return { success: true };
@@ -59,7 +59,6 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
 
     // 2. Initialize Agents
     const taskSpecAgent = new TaskSpecAgent();
-    // TaskSpecAgent needs `client` in context, which is passed in `process`.
 
     const orchestrator = new RepoSpecZeroOrchestrator(
         detectionSkill,
@@ -68,7 +67,6 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     );
 
     // 3. Register SpecZero Agents as Sub-Agents
-    // Order doesn't strictly matter here, orchestrator handles topological sort.
     const specAgents = [
         new OverviewAgent(),
         new ModuleAgent(),
@@ -90,42 +88,46 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     ];
 
     specAgents.forEach(agent => {
-        // Register required skills
         agent.registerSkill('native_llm', nativeLLMSkill);
         agent.registerSkill('repo_spec_zero_write_output', writerSkillExecutor);
-
-        // Register as sub-agent
-        // The orchestrator class I implemented extends BaseAgent.
-        // BaseAgent has `registerSubAgent`.
         orchestrator.registerSubAgent(agent);
     });
 
-    // Also register skills to orchestrator so they propagate if we add more sub-agents later
+    // Also register skills to orchestrator
     orchestrator.registerSkill('repo_spec_zero_build_tree', treeSkillExecutor);
-
 
     return {
         tool: {
             // Main entry point
             'repo_spec_zero_analyze': {
                 description: 'Analyze a repository to generate Spec Zero documentation.',
-                execute: async (params: { repoUrl?: string, taskId?: string }): Promise<any> => {
-                    // Create context with client
+                args: {
+                    repoUrl: z.string().describe('The Git URL of the repository to analyze.').optional(),
+                    repoPath: z.string().describe('Absolute path to a local repository (defaults to current working directory).').optional(),
+                    taskId: z.string().describe('Optional task ID (e.g. from ClickUp) to update progress on.').optional()
+                },
+                execute: async (params: { repoUrl?: string; repoPath?: string; taskId?: string }): Promise<any> => {
                     const context = {
                         client,
                         params,
-                        messages: [], // Empty for tool call
+                        messages: [],
                         intent: { name: 'analyze_repo', confidence: 1.0 }
                     };
                     return await orchestrator.process(context as any);
                 }
             },
 
-            // Expose internal tools for debugging or direct use
-            'repo_spec_zero_detect_type': async ({ repoPath }: { repoPath: string }): Promise<any> => {
-                return await detectionSkill.detect(repoPath);
+            // Debugging tool
+            'repo_spec_zero_detect_type': {
+                description: 'Detect the type of repository (library, service, etc).',
+                args: {
+                    repoPath: z.string().describe('Absolute path to the repository.')
+                },
+                execute: async ({ repoPath }: { repoPath: string }): Promise<any> => {
+                    return await detectionSkill.detect(repoPath);
+                }
             },
-        } as any,
+        },
         // Event handling
         event: async ({ event }) => {
             if (event.type === 'session.created') {
