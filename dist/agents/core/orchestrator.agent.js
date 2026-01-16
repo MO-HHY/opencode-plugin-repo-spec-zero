@@ -1,7 +1,6 @@
 import { BaseAgent } from '../base.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CONFIG } from '../../core/config.js';
 // Import all SpecZero Agents (we will need to register them or import them here to instantiate sub-agents)
 // For now, we assume they are registered in the global registry or we'll inject them into the orchestrator.
 // To keep it simple, we will assume the Orchestrator has access to them via `this.subAgents` or `context.agentRegistry`.
@@ -28,14 +27,11 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         const { client } = context;
         const params = context.params || {};
         console.log('[Orchestrator] Processing with params:', JSON.stringify(params));
-        // 1. Resolve Input (TaskId or RepoUrl)
+        // 1. Resolve Input (TaskId or RepoUrl or RepoPath)
         let repoUrl = params.repoUrl;
         let taskId = params.taskId;
         let repoPath = (params.repoPath || params.path || params.repoDir);
-        // Default to current working directory for local analysis.
-        if (!repoUrl && !taskId && !repoPath) {
-            repoPath = process.cwd();
-        }
+        let targetDir = params.targetDir;
         // If taskId provided, fetch repoUrl
         if (taskId) {
             await this.notify(client, `Fetching task ${taskId}...`);
@@ -53,6 +49,7 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         let projectSlug;
         let workDir;
         if (repoPath) {
+            // LOCAL REPO MODE: use provided path directly
             workDir = path.resolve(repoPath);
             projectSlug = path.basename(workDir) || 'unknown-repo';
             if (!fs.existsSync(workDir)) {
@@ -60,16 +57,37 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             }
             await this.notify(client, `Analyzing local repository: ${workDir}`);
         }
-        else {
+        else if (repoUrl) {
+            // REMOTE REPO MODE: clone to targetDir
+            if (!targetDir) {
+                return {
+                    success: false,
+                    message: `Error: targetDir is required when cloning a remote repository. Please specify where to clone ${repoUrl}`
+                };
+            }
             projectSlug = this.getSlug(repoUrl);
-            workDir = path.join(process.cwd(), CONFIG.TEMP_DIR, projectSlug);
+            // targetDir is where we create the project folder
+            const resolvedTargetDir = path.resolve(targetDir);
+            workDir = path.join(resolvedTargetDir, projectSlug);
+            // Ensure targetDir exists
+            if (!fs.existsSync(resolvedTargetDir)) {
+                await this.notify(client, `Creating target directory: ${resolvedTargetDir}`);
+                fs.mkdirSync(resolvedTargetDir, { recursive: true });
+            }
             await this.notify(client, `Cloning ${repoUrl} to ${workDir}...`);
             try {
                 await this.gitSkill.cloneOrUpdate(repoUrl, workDir);
+                await this.notify(client, `Clone successful!`, 'success');
             }
             catch (e) {
                 return { success: false, message: `Clone failed: ${e.message} ` };
             }
+        }
+        else {
+            // DEFAULT: use current working directory
+            workDir = process.cwd();
+            projectSlug = path.basename(workDir) || 'unknown-repo';
+            await this.notify(client, `Analyzing current directory: ${workDir}`);
         }
         // 3. Detect Type
         await this.notify(client, `Detecting repository type...`);

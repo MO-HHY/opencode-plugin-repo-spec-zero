@@ -183,10 +183,11 @@ const plugin = async (input) => {
         tool: {
             // Main entry point
             'repo_spec_zero_analyze': {
-                description: 'Analyze a repository to generate Spec Zero documentation.',
+                description: 'Analyze a repository to generate Spec Zero documentation. Pass repoUrl for remote repos (will be cloned to targetDir) or repoPath for local repos.',
                 args: {
-                    repoUrl: z.string().describe('The Git URL of the repository to analyze.').optional(),
-                    repoPath: z.string().describe('Absolute path to a local repository (defaults to current working directory).').optional(),
+                    repoUrl: z.string().describe('The Git URL of the repository to analyze (will be cloned).').optional(),
+                    repoPath: z.string().describe('Absolute path to a local repository (use this OR repoUrl, not both).').optional(),
+                    targetDir: z.string().describe('Directory where to clone the repo and generate output. Required when using repoUrl.').optional(),
                     taskId: z.string().describe('Optional task ID (e.g. from ClickUp) to update progress on.').optional()
                 },
                 execute: async (params) => {
@@ -194,8 +195,13 @@ const plugin = async (input) => {
                     const validParams = {
                         repoUrl: params.repoUrl?.trim() || undefined,
                         repoPath: params.repoPath?.trim() || undefined,
+                        targetDir: params.targetDir?.trim() || undefined,
                         taskId: params.taskId?.trim() || undefined
                     };
+                    // Validation: if repoUrl is provided, targetDir should also be provided
+                    if (validParams.repoUrl && !validParams.targetDir) {
+                        return 'Error: When using repoUrl, you must also specify targetDir (the directory where the repo will be cloned and analyzed).';
+                    }
                     const context = {
                         client,
                         params: validParams,
@@ -229,7 +235,7 @@ const plugin = async (input) => {
                     await client.tui.showToast({
                         body: {
                             title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin v0.1.14 is ready.',
+                            message: 'Repo Spec Zero Plugin v0.3.0 is ready.',
                             variant: 'info',
                             duration: 3000,
                         },

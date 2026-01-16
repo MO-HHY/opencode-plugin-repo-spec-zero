@@ -36,15 +36,11 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
 
         console.log('[Orchestrator] Processing with params:', JSON.stringify(params));
 
-        // 1. Resolve Input (TaskId or RepoUrl)
+        // 1. Resolve Input (TaskId or RepoUrl or RepoPath)
         let repoUrl = params.repoUrl as string | undefined;
         let taskId = params.taskId as string | undefined;
         let repoPath = (params.repoPath || params.path || params.repoDir) as string | undefined;
-
-        // Default to current working directory for local analysis.
-        if (!repoUrl && !taskId && !repoPath) {
-            repoPath = process.cwd();
-        }
+        let targetDir = params.targetDir as string | undefined;
 
         // If taskId provided, fetch repoUrl
         if (taskId) {
@@ -65,22 +61,46 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         let workDir: string;
 
         if (repoPath) {
+            // LOCAL REPO MODE: use provided path directly
             workDir = path.resolve(repoPath);
             projectSlug = path.basename(workDir) || 'unknown-repo';
             if (!fs.existsSync(workDir)) {
                 return { success: false, message: `Local path does not exist: ${workDir}` };
             }
             await this.notify(client, `Analyzing local repository: ${workDir}`);
-        } else {
+        } else if (repoUrl) {
+            // REMOTE REPO MODE: clone to targetDir
+            if (!targetDir) {
+                return { 
+                    success: false, 
+                    message: `Error: targetDir is required when cloning a remote repository. Please specify where to clone ${repoUrl}` 
+                };
+            }
+
             projectSlug = this.getSlug(repoUrl);
-            workDir = path.join(process.cwd(), CONFIG.TEMP_DIR, projectSlug);
+            
+            // targetDir is where we create the project folder
+            const resolvedTargetDir = path.resolve(targetDir);
+            workDir = path.join(resolvedTargetDir, projectSlug);
+
+            // Ensure targetDir exists
+            if (!fs.existsSync(resolvedTargetDir)) {
+                await this.notify(client, `Creating target directory: ${resolvedTargetDir}`);
+                fs.mkdirSync(resolvedTargetDir, { recursive: true });
+            }
 
             await this.notify(client, `Cloning ${repoUrl} to ${workDir}...`);
             try {
                 await this.gitSkill.cloneOrUpdate(repoUrl as string, workDir);
+                await this.notify(client, `Clone successful!`, 'success');
             } catch (e: any) {
                 return { success: false, message: `Clone failed: ${e.message} ` };
             }
+        } else {
+            // DEFAULT: use current working directory
+            workDir = process.cwd();
+            projectSlug = path.basename(workDir) || 'unknown-repo';
+            await this.notify(client, `Analyzing current directory: ${workDir}`);
         }
 
         // 3. Detect Type
