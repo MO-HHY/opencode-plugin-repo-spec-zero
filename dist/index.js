@@ -82,7 +82,7 @@ function resultToString(result) {
 }
 const RepoSpecZeroPlugin = async (input) => {
     const { client } = input;
-    console.log('RepoSpecZero Plugin v2.0.1 Initializing with DAG execution...');
+    console.log('RepoSpecZero Plugin v2.0.5 Initializing with DAG execution...');
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
     const nativeLLMSkill = new NativeLLMSkill(client);
@@ -273,8 +273,8 @@ const RepoSpecZeroPlugin = async (input) => {
                 try {
                     await client.tui.showToast({
                         body: {
-                            title: 'RepoSpecZero v2.0.0',
-                            message: 'Spec-Zero Plugin with submodule-based specs is ready.',
+                            title: 'RepoSpecZero v2.0.5',
+                            message: 'Spec-Zero Plugin with DAG execution is ready.',
                             variant: 'info',
                             duration: 3000,
                         },
