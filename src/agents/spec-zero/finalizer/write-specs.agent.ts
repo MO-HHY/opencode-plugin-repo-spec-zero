@@ -19,6 +19,9 @@ import {
     SPECS_FOLDER_STRUCTURE,
     GENERATED_SPEC_FILES,
     INDEX_DELIMITERS,
+    GENERATED_SUBDIRS,
+    AGENT_TO_SUBDIR_MAP,
+    AGENT_TO_FILENAME_MAP
 } from '../../../types.js';
 import { generateFrontmatter, type SpecOSFrontmatter } from '../../../prompts/output-schema.js';
 
@@ -26,27 +29,28 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Mapping of agent IDs to output file names
+ * v2.1.0: Build full path from agent ID using hierarchical structure
  */
-const AGENT_TO_FILE_MAP: Record<string, string> = {
-    'overview': 'overview.md',
-    'module': 'module.md',
-    'entity': 'entity.md',
-    'db': 'database.md',
-    'data_map': 'data_mapping.md',
-    'event': 'events.md',
-    'api': 'api.md',
-    'dependency': 'dependencies.md',
-    'service_dep': 'service_dependencies.md',
-    'auth': 'authentication.md',
-    'authz': 'authorization.md',
-    'security': 'security.md',
-    'prompt_sec': 'prompt_security.md',
-    'deployment': 'deployment.md',
-    'monitor': 'monitoring.md',
-    'ml': 'ml_services.md',
-    'flag': 'feature_flags.md',
-};
+function getAgentOutputPath(agentId: string): string | undefined {
+    const subdir = AGENT_TO_SUBDIR_MAP[agentId];
+    const filename = AGENT_TO_FILENAME_MAP[agentId];
+    
+    if (!subdir || !filename) {
+        return undefined;
+    }
+    
+    return `${subdir}/${filename}`;
+}
+
+/**
+ * WriteSpecsAgent - Generation Mode Finalizer
+ */
+const AGENT_TO_FILE_MAP: Record<string, string> = Object.fromEntries(
+    Object.keys(AGENT_TO_SUBDIR_MAP).map(agentId => [
+        agentId,
+        getAgentOutputPath(agentId) || ''
+    ]).filter(([, path]) => path !== '')
+);
 
 export interface WriteSpecsResult {
     /** Files written */
@@ -126,11 +130,22 @@ export class WriteSpecsAgent extends SubAgent {
             // 3. Write each agent output to corresponding file
             const filesWritten: string[] = [];
             for (const [agentId, output] of agentOutputs) {
-                const filename = AGENT_TO_FILE_MAP[agentId];
-                if (filename) {
-                    await manager.writeSpec(specsPath, filename, output);
-                    filesWritten.push(filename);
-                    logger.info(`Wrote: ${filename}`);
+                const relativePath = getAgentOutputPath(agentId);
+                if (relativePath) {
+                    await manager.writeSpec(specsPath, relativePath, output);
+                    filesWritten.push(relativePath); // Full hierarchical path
+                    logger.info(`Wrote: ${relativePath}`);
+                }
+            }
+
+            // 3b. Write standalone diagrams (v2.1.0)
+            const diagrams = sharedContext?.getAllDiagrams() || [];
+            if (diagrams.length > 0) {
+                logger.info(`Writing ${diagrams.length} standalone diagrams`);
+                for (const diagram of diagrams) {
+                    await manager.writeSpec(specsPath, diagram.path, diagram.content);
+                    filesWritten.push(diagram.path);
+                    logger.info(`Wrote diagram: ${diagram.path}`);
                 }
             }
 
@@ -193,7 +208,7 @@ export class WriteSpecsAgent extends SubAgent {
                 data: {
                     ...result,
                     output: summary,
-                    promptVersion: { id: 'write_specs', version: '2', hash: 'native' } as PromptVersion,
+                    promptVersion: { id: 'finalizer/write', version: '2', hash: 'native' } as PromptVersion,
                 },
                 message: `Generated ${filesWritten.length} spec files as v1.0.0`
             };
@@ -293,6 +308,7 @@ ${INDEX_DELIMITERS.MANUAL_END}
 
     /**
      * Build the auto-generated section of index.md
+     * v2.1.0: Organized by hierarchical folders
      */
     private buildAutoSection(
         projectSlug: string,
@@ -309,28 +325,78 @@ ${INDEX_DELIMITERS.MANUAL_END}
 
 ## Generated Specifications
 
-| Spec | Description | Status |
-|------|-------------|--------|
 `;
 
-        // Add each generated file
-        const categories: Record<string, string[]> = {
-            'Core': ['overview', 'module', 'entity'],
-            'Data': ['db', 'data_map', 'event'],
-            'Integration': ['api', 'dependency', 'service_dep'],
-            'Security': ['auth', 'authz', 'security', 'prompt_sec'],
-            'Operations': ['deployment', 'monitor', 'ml', 'flag'],
-        };
+        // v2.1.0: Organize by folder sections
+        const folderSections = [
+            { 
+                folder: '00-foundation', 
+                title: '🏛 Foundation', 
+                icon: '🏛',
+                agents: ['overview'] 
+            },
+            { 
+                folder: '01-domain', 
+                title: '📦 Domain', 
+                icon: '📦',
+                agents: ['entity', 'event'] 
+            },
+            { 
+                folder: '02-modules', 
+                title: '🧩 Modules', 
+                icon: '🧩',
+                agents: ['module'] 
+            },
+            { 
+                folder: '03-api', 
+                title: '🔌 API', 
+                icon: '🔌',
+                agents: ['api'] 
+            },
+            { 
+                folder: '04-data', 
+                title: '💾 Data', 
+                icon: '💾',
+                agents: ['db', 'data_map'] 
+            },
+            { 
+                folder: '05-auth', 
+                title: '🔐 Auth & Security', 
+                icon: '🔐',
+                agents: ['auth', 'authz', 'security', 'prompt_sec'] 
+            },
+            { 
+                folder: '06-integration', 
+                title: '🔗 Integration', 
+                icon: '🔗',
+                agents: ['dependency', 'service_dep'] 
+            },
+            { 
+                folder: '07-ops', 
+                title: '⚙️ Operations', 
+                icon: '⚙️',
+                agents: ['deployment', 'monitor', 'ml', 'flag'] 
+            },
+        ];
 
-        for (const [category, agents] of Object.entries(categories)) {
-            section += `| **${category}** | | |\n`;
-            for (const agentId of agents) {
-                const filename = AGENT_TO_FILE_MAP[agentId];
-                if (filename && agentOutputs.has(agentId)) {
+        for (const { folder, title, agents } of folderSections) {
+            // Check if any agents in this section were generated
+            const generatedAgents = agents.filter(a => agentOutputs.has(a));
+            if (generatedAgents.length === 0) continue;
+
+            section += `### ${title}\n\n`;
+            section += `| Spec | Description | Status |\n`;
+            section += `|------|-------------|--------|\n`;
+            
+            for (const agentId of generatedAgents) {
+                const filePath = getAgentOutputPath(agentId);
+                if (filePath) {
                     const title = this.formatAgentTitle(agentId);
-                    section += `| [${title}](_generated/${filename}) | ${this.getAgentDescription(agentId)} | Generated |\n`;
+                    const desc = this.getAgentDescription(agentId);
+                    section += `| [${title}](_generated/${filePath}) | ${desc} | Generated |\n`;
                 }
             }
+            section += '\n';
         }
 
         return section;

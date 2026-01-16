@@ -11,7 +11,11 @@
 
 import type { SharedContext, AgentOutput } from './context.js';
 import type { BaseAgent } from '../agents/base.js';
-import type { DAGNode, DAGDefinition, DAGExecutionResult, DAGExecutionSummary, PromptVersion, SpecZeroMode } from '../types.js';
+import type { 
+    DAGNode, DAGDefinition, DAGExecutionResult, DAGExecutionSummary, 
+    PromptVersion, SpecZeroMode, SkipResult, DetectedFeatures, PlannedAgent 
+} from '../types.js';
+import { SmartDAGPlanner } from './smart-dag-planner.js';
 
 // Re-export types for convenience
 export type { DAGNode, DAGDefinition };
@@ -70,10 +74,23 @@ export const GENERATION_DAG: DAGDefinition = {
         // Layers 2-8: Analysis nodes
         ...ANALYSIS_NODES,
         
-        // Layer 9: Write specs to _generated/
-        { agentId: 'write_specs', dependencies: ['summary'] },
+        // Layer 9: Structure Builder (prepares hierarchical folders)
+        {
+            agentId: 'structure_builder',
+            dependencies: ['summary'],
+            parallel: false,
+            optional: false,
+        },
         
-        // Layer 10: Commit and push
+        // Layer 10: Write specs to _generated/
+        {
+            agentId: 'write_specs',
+            dependencies: ['structure_builder'],
+            parallel: false,
+            optional: false,
+        },
+        
+        // Layer 11: Commit and push
         { agentId: 'commit_push', dependencies: ['write_specs'] }
     ]
 };
@@ -161,7 +178,7 @@ export function selectDAG(mode: SpecZeroMode): DAGDefinition {
 }
 
 export interface DAGExecutorOptions {
-    onProgress?: (agentId: string, status: 'start' | 'success' | 'error', message?: string) => void;
+    onProgress?: (agentId: string, status: 'start' | 'success' | 'error' | 'skip', message?: string) => void;
     onLayerStart?: (layer: number, agents: string[]) => void;
     onLayerComplete?: (layer: number, results: DAGExecutionResult[]) => void;
     skipOptionalOnFailure?: boolean;
@@ -173,6 +190,10 @@ export interface DAGExecutorOptions {
     pluginVersion?: string;
     /** v2.0.0: Skip push operations */
     noPush?: boolean;
+    /** v2.1.0: Smart planner for skip logic */
+    planner?: SmartDAGPlanner;
+    /** v2.1.0: Detected features for skip logic */
+    features?: DetectedFeatures;
 }
 
 export class DAGExecutor {
@@ -183,6 +204,9 @@ export class DAGExecutor {
     private executionResults: DAGExecutionResult[] = [];
     /** v2.0.0: Detected mode after submodule check */
     private detectedMode: SpecZeroMode = 'generation';
+    /** v2.1.0: Tracking for skip logic */
+    private completedAgents = new Set<string>();
+    private failedAgents = new Set<string>();
     
     constructor(
         dag: DAGDefinition,
@@ -376,6 +400,7 @@ export class DAGExecutor {
                     summary: this.extractSummary(result.data.output || JSON.stringify(result.data)),
                     fullContent: result.data.output || JSON.stringify(result.data),
                     promptVersion: result.data.promptVersion || { id: agentId, version: '1', hash: 'unknown' },
+                    diagrams: result.data.diagrams,
                     timestamp: new Date()
                 };
                 this.context.registerOutput(output);
@@ -393,6 +418,7 @@ export class DAGExecutor {
                     summary: this.extractSummary(result.data.output || ''),
                     fullContent: result.data.output || '',
                     promptVersion: result.data.promptVersion || { id: agentId, version: '1', hash: 'unknown' },
+                    diagrams: result.data.diagrams,
                     timestamp: new Date()
                 } : undefined
             };
@@ -451,6 +477,10 @@ export class DAGExecutor {
         const allResults: DAGExecutionResult[] = [];
         const startTime = Date.now();
         
+        // Reset tracking
+        this.completedAgents.clear();
+        this.failedAgents.clear();
+        
         console.log(`[DAG] Executing ${this.dag.nodes.length} agents in ${layers.length} layers`);
         
         for (let i = 0; i < layers.length; i++) {
@@ -461,31 +491,83 @@ export class DAGExecutor {
             
             // Execute agents in parallel within layer
             const layerResults = await Promise.all(
-                layer.map(agentId => this.executeAgent(agentId, client))
+                layer.map(async (agentId) => {
+                    // v2.1.0: Check if agent should be skipped using SmartDAGPlanner
+                    if (this.options.planner && this.options.features) {
+                        const node = this.dag.nodes.find(n => n.agentId === agentId);
+                        if (node) {
+                            // Resolve '*' dependencies for the skip checker
+                            let dependencies = node.dependencies;
+                            if (dependencies.includes('*')) {
+                                dependencies = this.dag.nodes
+                                    .map(n => n.agentId)
+                                    .filter(id => id !== agentId);
+                            }
+
+                            // Map DAGNode to a subset of PlannedAgent that shouldSkipAgent needs
+                            const plannedAgent: Partial<PlannedAgent> = {
+                                id: node.agentId,
+                                dependencies: dependencies,
+                                optional: node.optional || false
+                            };
+                            
+                            const skipResult = this.options.planner.shouldSkipAgent(
+                                plannedAgent as PlannedAgent,
+                                this.options.features,
+                                this.completedAgents,
+                                this.failedAgents
+                            );
+                            
+                            if (skipResult.skip) {
+                                console.log(`[DAG] Skipping agent ${agentId}: ${skipResult.reason}`);
+                                this.options.onProgress?.(agentId, 'skip', skipResult.reason);
+                                return {
+                                    agentId,
+                                    success: true,
+                                    skipped: true,
+                                    skipReason: skipResult.reason,
+                                    durationMs: 0
+                                };
+                            }
+                        }
+                    }
+
+                    const result = await this.executeAgent(agentId, client);
+                    
+                    // Track for cascade skip logic
+                    if (result.success && !result.skipped) {
+                        this.completedAgents.add(agentId);
+                    } else if (!result.success) {
+                        this.failedAgents.add(agentId);
+                    }
+                    
+                    return result;
+                })
             );
             
             allResults.push(...layerResults);
             this.options.onLayerComplete?.(i, layerResults);
             
             // Log layer results
-            const successful = layerResults.filter(r => r.success).length;
+            const successful = layerResults.filter(r => r.success && !r.skipped).length;
+            const skipped = layerResults.filter(r => r.skipped).length;
             const failed = layerResults.filter(r => !r.success).length;
-            console.log(`[DAG] Layer ${i + 1} complete: ${successful} success, ${failed} failed`);
+            console.log(`[DAG] Layer ${i + 1} complete: ${successful} success, ${skipped} skipped, ${failed} failed`);
         }
         
         this.executionResults = allResults;
         
         const summary: DAGExecutionSummary = {
             totalAgents: this.dag.nodes.length,
-            executed: allResults.length,
-            successful: allResults.filter(r => r.success).length,
+            executed: allResults.filter(r => !r.skipped).length,
+            successful: allResults.filter(r => r.success && !r.skipped).length,
             failed: allResults.filter(r => !r.success).length,
-            skipped: this.dag.nodes.length - allResults.length,
+            skipped: allResults.filter(r => r.skipped).length + (this.dag.nodes.length - allResults.length),
             totalDurationMs: Date.now() - startTime,
             results: allResults
         };
         
-        console.log(`[DAG] Execution complete: ${summary.successful}/${summary.executed} successful in ${summary.totalDurationMs}ms`);
+        console.log(`[DAG] Execution complete: ${summary.successful} successful, ${summary.skipped} skipped, ${summary.failed} failed in ${summary.totalDurationMs}ms`);
         
         return summary;
     }

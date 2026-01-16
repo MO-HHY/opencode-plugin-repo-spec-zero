@@ -200,7 +200,7 @@ export class SubmoduleCheckAgent extends SubAgent {
                     repoSha,
                     repoBranch,
                     repoUrl,
-                    promptVersion: { id: 'submodule_check', version: '2', hash: 'native' },
+                    promptVersion: { id: 'core/submodule-check', version: '2', hash: 'native' },
                 },
                 message: `Submodule check complete: ${state.mode} mode`
             };

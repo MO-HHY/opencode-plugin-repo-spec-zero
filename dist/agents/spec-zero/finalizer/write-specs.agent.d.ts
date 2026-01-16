@@ -44,6 +44,7 @@ export declare class WriteSpecsAgent extends SubAgent {
     private generateIndex;
     /**
      * Build the auto-generated section of index.md
+     * v2.1.0: Organized by hierarchical folders
      */
     private buildAutoSection;
     /**

@@ -17,6 +17,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
+import { migrateManifest, needsMigration } from '../core/manifest-migrator.js';
+import { ManifestValidator } from '../core/manifest-validator.js';
 import {
     SubmoduleConfig,
     SubmoduleState,
@@ -31,6 +33,7 @@ import {
     AuditEntry,
     SemVer,
     VersionBumpType,
+    GENERATED_SUBDIRS,
 } from '../types.js';
 
 const execAsync = promisify(exec);
@@ -54,6 +57,7 @@ export interface SubmoduleManagerOptions {
 export class SubmoduleManager {
     private logger: Logger;
     private options: SubmoduleManagerOptions;
+    private validator: ManifestValidator;
 
     constructor(logger: Logger, options: SubmoduleManagerOptions = {}) {
         this.logger = logger;
@@ -63,6 +67,7 @@ export class SubmoduleManager {
             hasGhCli: false,
             ...options,
         };
+        this.validator = new ManifestValidator();
     }
 
     // =========================================================================
@@ -304,6 +309,47 @@ export class SubmoduleManager {
         this.logger.info('Folder structure created');
     }
 
+    /**
+     * v2.1.0: Initialize hierarchical folder structure in _generated/
+     * Creates all subdirectories defined in GENERATED_SUBDIRS
+     */
+    async initializeGeneratedStructure(specsPath: string, repoType?: string): Promise<void> {
+        // Import at top of file: import { GENERATED_SUBDIRS } from '../types.js';
+        
+        const generatedPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.GENERATED);
+        
+        // Ensure _generated exists
+        if (!fs.existsSync(generatedPath)) {
+            fs.mkdirSync(generatedPath, { recursive: true });
+        }
+        
+        // Create all standard subdirectories
+        for (const subdir of Object.values(GENERATED_SUBDIRS)) {
+            const subdirPath = path.join(generatedPath, subdir);
+            if (!fs.existsSync(subdirPath)) {
+                fs.mkdirSync(subdirPath, { recursive: true });
+                // Create .gitkeep to preserve empty directories in git
+                fs.writeFileSync(path.join(subdirPath, '.gitkeep'), '');
+                this.logger.info?.(`Created subdirectory: ${subdir}/`);
+            }
+        }
+        
+        // Create dynamic substructure for modules based on repoType
+        if (repoType === 'fullstack' || repoType === 'monorepo') {
+            const modulesPath = path.join(generatedPath, GENERATED_SUBDIRS.MODULES);
+            for (const sub of ['backend', 'frontend']) {
+                const subPath = path.join(modulesPath, sub);
+                if (!fs.existsSync(subPath)) {
+                    fs.mkdirSync(subPath, { recursive: true });
+                    fs.writeFileSync(path.join(subPath, '.gitkeep'), '');
+                    this.logger.info?.(`Created module subdirectory: ${GENERATED_SUBDIRS.MODULES}/${sub}/`);
+                }
+            }
+        }
+        
+        this.logger.info?.('Generated folder structure initialized');
+    }
+
     // =========================================================================
     // MANIFEST OPERATIONS
     // =========================================================================
@@ -320,9 +366,36 @@ export class SubmoduleManager {
         
         try {
             const content = fs.readFileSync(manifestPath, 'utf-8');
-            return JSON.parse(content) as SpecsManifest;
-        } catch (error) {
-            this.logger.error(`Failed to read manifest: ${error}`);
+            let manifest = JSON.parse(content) as SpecsManifest;
+            
+            // v2.1.0: Validate and repair if needed
+            const validation = this.validator.validate(manifest);
+            if (!validation.valid) {
+                this.logger.warn?.(`Manifest validation errors: ${validation.errors.join(', ')}`);
+                this.logger.info?.('Attempting to repair manifest...');
+                manifest = this.validator.repairManifest(manifest);
+            }
+
+            // v2.1.0: Auto-migrate if needed
+            if (needsMigration(manifest)) {
+                this.logger.info?.('Migrating manifest from v2.0 to v2.1...');
+                manifest = migrateManifest(manifest);
+                // Persist migrated manifest
+                await this.writeManifest(specsPath, manifest);
+                this.logger.info?.('Manifest migrated successfully');
+            }
+            
+            // v2.1.0: Validate file locations for v2.1 manifests
+            if (manifest.schema_version === '2.1') {
+                const fileValidation = this.validator.validateFileLocations(manifest, specsPath);
+                if (!fileValidation.valid) {
+                    this.logger.warn?.(`Manifest file location errors: ${fileValidation.errors.join(', ')}`);
+                }
+            }
+
+            return manifest;
+        } catch (error: any) {
+            this.logger.error?.(`Failed to read manifest: ${error.message}`);
             return undefined;
         }
     }
@@ -333,6 +406,14 @@ export class SubmoduleManager {
     async writeManifest(specsPath: string, manifest: SpecsManifest): Promise<void> {
         const manifestPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.MANIFEST);
         
+        // v2.1.0: Validate before writing
+        const validation = this.validator.validate(manifest);
+        if (!validation.valid) {
+            this.logger.warn?.(`Writing manifest with errors: ${validation.errors.join(', ')}`);
+            // We still write it but we warn. In some cases we might want to block it, 
+            // but for now let's be permissive but loud.
+        }
+
         // Ensure .meta directory exists
         const metaDir = path.join(specsPath, SPECS_FOLDER_STRUCTURE.META);
         if (!fs.existsSync(metaDir)) {
@@ -491,17 +572,21 @@ export class SubmoduleManager {
     }
 
     /**
-     * Write a spec file to _generated folder
+     * Write a spec file to the _generated directory
+     * v2.1.0: Supports hierarchical paths with auto-creation of subdirectories
      */
-    async writeSpec(specsPath: string, filename: string, content: string): Promise<void> {
+    async writeSpec(specsPath: string, relativePath: string, content: string): Promise<void> {
         const generatedPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.GENERATED);
+        const fullPath = path.join(generatedPath, relativePath);
         
-        if (!fs.existsSync(generatedPath)) {
-            fs.mkdirSync(generatedPath, { recursive: true });
+        // v2.1.0: Create parent directory if it doesn't exist
+        const dirPath = path.dirname(fullPath);
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
         }
         
-        const filePath = path.join(generatedPath, filename);
-        fs.writeFileSync(filePath, content);
+        fs.writeFileSync(fullPath, content, 'utf-8');
+        this.logger.info(`Wrote spec: ${relativePath}`);
     }
 
     /**

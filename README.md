@@ -1,4 +1,4 @@
-# RepoSpecZero Plugin 🕵️‍♂️
+# RepoSpecZero Plugin 🕵️‍♂️ v2.1.0
 
 **RepoSpecZero** (`@mo-hhy/opencode-plugin-repo-spec-zero`) is a powerful **Agentic Swarm** plugin for OpenCode that autonomously analyzes codebases and generates **SPEC-OS** compatible specifications ("Spec Zero").
 
@@ -6,21 +6,18 @@
 
 ## ✨ Features
 
-*   **🕵️‍♂️ Analysis Swarm**: Orchestrates **17 specialized agents** (Overview, Database, Security, API, etc.) to deeply analyze every aspect of a repository.
-*   **🧠 Intelligent Detection**: Automatically detects repository type (Frontend, Backend, IaC, Library, Mobile) and selects the optimal analysis strategy.
-*   **📂 SPEC-OS Output**: Generates a standardized `{project}-spec/` directory structure compatible with the SPEC-OS Knowledge Graph.
-*   **🔗 ClickUp Integration**: Fetches tasks from ClickUp (via `activity-register`) and updates them with analysis progress and results.
-*   **🛡️ Secure & Local**: Runs within your OpenCode environment, leveraging your configured LLM (Claude/Anthropic).
+*   **🧠 Smart DAG Execution (New v2.1.0)**: Uses a dynamic Directed Acyclic Graph planner to select only the relevant agents based on repository features.
+*   **📊 Diagram Generation**: Automatically generates Mermaid.js diagrams (ERD, Sequence, Flowchart, C4) both inline and as standalone `.mmd` files.
+*   **📂 Hierarchical Output**: Organizes specifications into 8 logical layers (Foundation, Domain, API, Data, etc.) for better navigability.
+*   **📝 Template System**: Uses Handlebars-like templates to ensure consistent, high-quality markdown output.
+*   **🛡️ Manifest Validation**: Built-in validation and repair for specs manifests to ensure long-term consistency.
+*   **🕵️‍♂️ Analysis Swarm**: Orchestrates specialized agents to deeply analyze every aspect of a repository.
 
 ## 🚀 Installation
 
-### Prerequisites
-*   **OpenCode** installed.
-*   **No API Keys Required**: Uses the native OpenCode LLM configuration.
-
 ### Option 1: Install from GitHub Packages (Recommended)
 
-Add the plugin to your `opencode.json` configuration. You may need to configure your `.npmrc` to authenticate with GitHub Packages if the package is private.
+Add the plugin to your `opencode.json` configuration.
 
 ```json
 {
@@ -44,58 +41,45 @@ Add the plugin to your `opencode.json` configuration. You may need to configure 
     npm run build
     ```
 
-3.  **Link**:
-    Update your `opencode.json` to point to the local directory or use `npm link`.
-
-### Option 3: Automated Installer (Zero Config)
-
-Run this command in any OpenCode workspace root to automatically configure the plugin:
-
-```bash
-npx @mo-hhy/opencode-plugin-repo-spec-zero install
-```
-
-This will set up your `.opencode` folder and `opencode.json` automatically.
-
-## ⚙️ Configuration
-
-No additional configuration is required. The plugin inherits the LLM settings from your OpenCode environment.
-
 ## 🛠 Usage
 
-### Analyze a Public Repository
-Ask OpenCode to analyze a GitHub repository directly:
+### Analyze a Repository
+Ask OpenCode to analyze a repository:
 
 > "Analyze repo https://github.com/username/project"
 
-### Analyze a ClickUp Task
-If you use the `activity-register` plugin, you can process a task directly. The orchestrator will extract the repository URL from the task description:
+### Advanced CLI Flags
+The `repo_spec_zero_analyze` tool supports several advanced flags:
 
-> "Analyze task CLK-1234"
+*   `--smart-dag`: (boolean) Enable/disable dynamic agent selection (default: true).
+*   `--diagrams`: (`inline` | `standalone` | `both` | `none`) Control diagram output mode (default: `both`).
+*   `--template`: (string) Override the default template for an agent.
+*   `--skipAgents`: (string[]) List of agent IDs to explicitly skip.
 
 ## 🏗 Architecture
 
-This plugin uses a **Hierarchical Swarm** architecture.
+v2.1.0 introduces a **Modular Smart Swarm** architecture:
 
-*   **Orchestrator**: The "Brain". Manages lifecycle, git operations, and agent coordination.
-*   **Specialized Agents**: 17 domain experts (e.g., `DbAgent`, `SecurityAgent`, `ReactComponentAgent`) that execute in parallel or sequence based on dependencies.
+1.  **Feature Detector**: Scans the repo for frameworks, languages, and patterns.
+2.  **Smart DAG Planner**: Builds a custom execution plan based on detected features.
+3.  **Generic Analysis Agents**: High-performance agents guided by external prompts and templates.
+4.  **Diagram Generator**: Extracts logic from analysis to create visual representations.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed diagrams and internal logic.
+## 📦 Output Structure (v2.1.0)
 
-## 📦 Output Structure
-
-The plugin generates a `spec-zero` compatible folder structure:
+Specifications are now organized hierarchically:
 
 ```
-{project}-spec/
-├── analysis/
-│   ├── core/           # Overview, Modules, Entities
-│   ├── data/           # Database, Events, Data Map
-│   ├── integration/    # APIs, Dependencies
-│   ├── security/       # Auth, Authz, Vulnerabilities
-│   └── ops/            # Deployment, Monitoring
-├── architecture/       # High-level architecture docs
-└── spec_zero.md        # Master entry point
+specs/_generated/
+├── 00-foundation/    # Project Overview & Architecture
+├── 01-domain/        # Entities & Domain Logic
+├── 02-modules/       # Codebase Modules (Frontend/Backend)
+├── 03-api/           # REST/GraphQL Endpoints
+├── 04-data/          # Database Schema & Data Mapping
+├── 05-auth/          # Authentication & Security
+├── 06-integration/   # Dependencies & Services
+├── 07-ops/           # Deployment & Monitoring
+└── _diagrams/        # Standalone .mmd files
 ```
 
 ## 🤝 Contributing
@@ -107,3 +91,4 @@ The plugin generates a `spec-zero` compatible folder structure:
 
 ---
 *Built with ❤️ by the MO-HHY Team.*
+

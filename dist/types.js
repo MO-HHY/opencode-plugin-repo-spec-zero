@@ -2,6 +2,41 @@
  * Core Types for Repo-Spec-Zero Plugin
  * Extended with DAG, Context, and SPEC-OS compliance types
  */
+/**
+ * Feature flags used for conditional agent selection
+ */
+export const FEATURE_FLAGS = {
+    // API
+    HAS_REST_API: 'has_rest_api',
+    HAS_GRAPHQL: 'has_graphql',
+    HAS_WEBSOCKET: 'has_websocket',
+    HAS_GRPC: 'has_grpc',
+    // Database
+    HAS_SQL_DB: 'has_sql_db',
+    HAS_NOSQL_DB: 'has_nosql_db',
+    HAS_ORM: 'has_orm',
+    HAS_MIGRATIONS: 'has_migrations',
+    // Auth
+    HAS_AUTH: 'has_auth',
+    HAS_OAUTH: 'has_oauth',
+    HAS_JWT: 'has_jwt',
+    HAS_RBAC: 'has_rbac',
+    // Frontend
+    HAS_REACT: 'has_react',
+    HAS_VUE: 'has_vue',
+    HAS_ANGULAR: 'has_angular',
+    HAS_STATE_MGMT: 'has_state_mgmt',
+    HAS_ROUTING: 'has_routing',
+    // Infra
+    HAS_DOCKER: 'has_docker',
+    HAS_K8S: 'has_k8s',
+    HAS_SERVERLESS: 'has_serverless',
+    HAS_CICD: 'has_cicd',
+    // Quality
+    HAS_TESTS: 'has_tests',
+    HAS_LINTING: 'has_linting',
+    HAS_TYPES: 'has_types',
+};
 // Default key files to read for each repo type
 export const DEFAULT_KEY_FILES = {
     generic: [
@@ -89,6 +124,81 @@ export const SPECS_FOLDER_STRUCTURE = {
     AUDIT_REPORT: 'AUDIT_REPORT.md',
     /** Index file */
     INDEX: 'index.md',
+};
+/**
+ * v2.1.0: Subdirectory structure within _generated/
+ */
+export const GENERATED_SUBDIRS = {
+    /** Layer 0: Foundation */
+    FOUNDATION: '00-foundation',
+    /** Layer 1: Domain model */
+    DOMAIN: '01-domain',
+    /** Layer 2: Code modules */
+    MODULES: '02-modules',
+    /** Layer 3: API contracts */
+    API: '03-api',
+    /** Layer 4: Data layer */
+    DATA: '04-data',
+    /** Layer 5: Auth & Security */
+    AUTH: '05-auth',
+    /** Layer 6: Integration */
+    INTEGRATION: '06-integration',
+    /** Layer 7: Operations */
+    OPS: '07-ops',
+    /** Visual assets */
+    DIAGRAMS: '_diagrams',
+};
+/**
+ * v2.1.0: Mapping of agent IDs to target subdirectory
+ */
+export const AGENT_TO_SUBDIR_MAP = {
+    // 00-foundation
+    'overview': GENERATED_SUBDIRS.FOUNDATION,
+    // 01-domain
+    'entity': GENERATED_SUBDIRS.DOMAIN,
+    'event': GENERATED_SUBDIRS.DOMAIN,
+    // 02-modules
+    'module': GENERATED_SUBDIRS.MODULES,
+    // 03-api
+    'api': GENERATED_SUBDIRS.API,
+    // 04-data
+    'db': GENERATED_SUBDIRS.DATA,
+    'data_map': GENERATED_SUBDIRS.DATA,
+    // 05-auth
+    'auth': GENERATED_SUBDIRS.AUTH,
+    'authz': GENERATED_SUBDIRS.AUTH,
+    'security': GENERATED_SUBDIRS.AUTH,
+    'prompt_sec': GENERATED_SUBDIRS.AUTH,
+    // 06-integration
+    'dependency': GENERATED_SUBDIRS.INTEGRATION,
+    'service_dep': GENERATED_SUBDIRS.INTEGRATION,
+    // 07-ops
+    'deployment': GENERATED_SUBDIRS.OPS,
+    'monitor': GENERATED_SUBDIRS.OPS,
+    'ml': GENERATED_SUBDIRS.OPS,
+    'flag': GENERATED_SUBDIRS.OPS,
+};
+/**
+ * v2.1.0: File names within each subdirectory
+ */
+export const AGENT_TO_FILENAME_MAP = {
+    'overview': 'overview.md',
+    'entity': 'entities.md',
+    'event': 'events.md',
+    'module': 'index.md',
+    'api': 'endpoints.md',
+    'db': 'database.md',
+    'data_map': 'data_mapping.md',
+    'auth': 'authentication.md',
+    'authz': 'authorization.md',
+    'security': 'security.md',
+    'prompt_sec': 'prompt_security.md',
+    'dependency': 'dependencies.md',
+    'service_dep': 'services.md',
+    'deployment': 'deployment.md',
+    'monitor': 'monitoring.md',
+    'ml': 'ml_services.md',
+    'flag': 'feature_flags.md',
 };
 /**
  * Generated spec file names

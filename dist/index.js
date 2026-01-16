@@ -1,9 +1,11 @@
 import { z } from 'zod';
 // Core Infrastructure (NEW)
 export { SharedContext } from './core/context.js';
+export { FeatureDetector } from './core/feature-detector.js';
 export { PromptLoader, createPromptLoader } from './core/prompt-loader.js';
 export { DAGExecutor, DEFAULT_DAG, GENERATION_DAG, AUDIT_DAG, selectDAG, createCustomDAG } from './core/dag-executor.js';
 export { OutputValidator, validateOutput, validateAndFix } from './core/output-validator.js';
+export { SmartDAGPlanner } from './core/smart-dag-planner.js';
 // v2.0.0: Commands
 export { analyzeCommand, applyCommand, parseAnalyzeArgs, parseApplyArgs } from './commands/index.js';
 // v2.0.0: Skills
@@ -40,6 +42,7 @@ import { MonitorAgent } from './agents/spec-zero/ops/monitor.agent.js';
 import { MlAgent } from './agents/spec-zero/ops/ml.agent.js';
 import { FlagAgent } from './agents/spec-zero/ops/flag.agent.js';
 import { SummaryAgent } from './agents/spec-zero/finalizer/summary.agent.js';
+import { StructureBuilderAgent } from './agents/spec-zero/finalizer/structure-builder.agent.js';
 // v2.0.0: New Finalizer Agents
 import { SubmoduleCheckAgent } from './agents/core/submodule-check.agent.js';
 import { WriteSpecsAgent } from './agents/spec-zero/finalizer/write-specs.agent.js';
@@ -142,6 +145,7 @@ const RepoSpecZeroPlugin = async (input) => {
         new MlAgent(),
         new FlagAgent(),
         new SummaryAgent(), // Layer 8 (Summary)
+        new StructureBuilderAgent(), // Layer 9 (Structure Builder)
         // v2.0.0: Layer 9-10 - Finalizers
         new WriteSpecsAgent(), // Generation mode
         new AuditReportAgent(), // Audit mode

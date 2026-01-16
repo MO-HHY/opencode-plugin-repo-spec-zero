@@ -87,7 +87,7 @@ export class SummaryAgent extends SubAgent {
             fs.writeFileSync(path.join(specDir, 'index.md'), indexContent);
 
             const promptVersion: PromptVersion = {
-                id: 'summary',
+                id: 'analysis/summary',
                 version: '1',
                 hash: 'native'
             };

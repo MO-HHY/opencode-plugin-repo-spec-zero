@@ -123,7 +123,70 @@ export interface ValidationResult {
     errors: string[];
     warnings: string[];
 }
-export type RepoType = 'frontend' | 'backend' | 'fullstack' | 'library' | 'mobile' | 'infra-as-code' | 'monorepo' | 'generic';
+export type RepoType = 'backend' | 'frontend' | 'fullstack' | 'library' | 'cli' | 'monorepo' | 'mobile' | 'unknown';
+/**
+ * Structure detection result for repository
+ */
+export interface RepoStructure {
+    hasBackend: boolean;
+    hasFrontend: boolean;
+    hasTests: boolean;
+    hasDocs: boolean;
+    hasDocker: boolean;
+    hasCICD: boolean;
+    isMonorepo: boolean;
+}
+/**
+ * Feature detection result for a repository
+ * Used by SmartDAGPlanner to determine which agents to run
+ */
+export interface DetectedFeatures {
+    /** Determined repository type */
+    repoType: RepoType;
+    /** Detected programming languages */
+    languages: Set<string>;
+    /** Detected frameworks (express, react, etc.) */
+    frameworks: Set<string>;
+    /** Detected feature flags (HAS_REST_API, HAS_AUTH, etc.) */
+    features: Set<string>;
+    /** Directory structure analysis */
+    structure: RepoStructure;
+    /** Detected package manager */
+    packageManager?: 'npm' | 'yarn' | 'pnpm' | 'pip' | 'cargo';
+    /** Found entry points (src/index.ts, etc.) */
+    entryPoints: string[];
+}
+/**
+ * Feature flags used for conditional agent selection
+ */
+export declare const FEATURE_FLAGS: {
+    readonly HAS_REST_API: "has_rest_api";
+    readonly HAS_GRAPHQL: "has_graphql";
+    readonly HAS_WEBSOCKET: "has_websocket";
+    readonly HAS_GRPC: "has_grpc";
+    readonly HAS_SQL_DB: "has_sql_db";
+    readonly HAS_NOSQL_DB: "has_nosql_db";
+    readonly HAS_ORM: "has_orm";
+    readonly HAS_MIGRATIONS: "has_migrations";
+    readonly HAS_AUTH: "has_auth";
+    readonly HAS_OAUTH: "has_oauth";
+    readonly HAS_JWT: "has_jwt";
+    readonly HAS_RBAC: "has_rbac";
+    readonly HAS_REACT: "has_react";
+    readonly HAS_VUE: "has_vue";
+    readonly HAS_ANGULAR: "has_angular";
+    readonly HAS_STATE_MGMT: "has_state_mgmt";
+    readonly HAS_ROUTING: "has_routing";
+    readonly HAS_DOCKER: "has_docker";
+    readonly HAS_K8S: "has_k8s";
+    readonly HAS_SERVERLESS: "has_serverless";
+    readonly HAS_CICD: "has_cicd";
+    readonly HAS_TESTS: "has_tests";
+    readonly HAS_LINTING: "has_linting";
+    readonly HAS_TYPES: "has_types";
+};
+/** Type for feature flag values */
+export type FeatureFlag = typeof FEATURE_FLAGS[keyof typeof FEATURE_FLAGS];
 export interface KeyFileDefinition {
     path: string;
     required: boolean;
@@ -188,7 +251,7 @@ export type SpecZeroMode = 'generation' | 'audit';
  */
 export interface SpecsManifest {
     /** Schema version for forward compatibility */
-    schema_version: '2.0';
+    schema_version: '2.0' | '2.1';
     /** Project information */
     project: ProjectInfo;
     /** Current specs SemVer version */
@@ -197,6 +260,12 @@ export interface SpecsManifest {
     mode: SpecZeroMode;
     /** Whether there's a pending audit report */
     pending_audit: boolean;
+    /** v2.1: Folder structure version */
+    folder_structure_version?: '1.0' | '2.0';
+    /** v2.1: Hash of folder structure for drift detection */
+    structure_hash?: string;
+    /** v2.1: Mapping of agent ID to file location */
+    file_locations?: Record<string, string>;
     /** History of all analyses/applies */
     analyses: AnalysisEntry[];
     /** History of all audits */
@@ -442,6 +511,37 @@ export declare const SPECS_FOLDER_STRUCTURE: {
     readonly INDEX: "index.md";
 };
 /**
+ * v2.1.0: Subdirectory structure within _generated/
+ */
+export declare const GENERATED_SUBDIRS: {
+    /** Layer 0: Foundation */
+    readonly FOUNDATION: "00-foundation";
+    /** Layer 1: Domain model */
+    readonly DOMAIN: "01-domain";
+    /** Layer 2: Code modules */
+    readonly MODULES: "02-modules";
+    /** Layer 3: API contracts */
+    readonly API: "03-api";
+    /** Layer 4: Data layer */
+    readonly DATA: "04-data";
+    /** Layer 5: Auth & Security */
+    readonly AUTH: "05-auth";
+    /** Layer 6: Integration */
+    readonly INTEGRATION: "06-integration";
+    /** Layer 7: Operations */
+    readonly OPS: "07-ops";
+    /** Visual assets */
+    readonly DIAGRAMS: "_diagrams";
+};
+/**
+ * v2.1.0: Mapping of agent IDs to target subdirectory
+ */
+export declare const AGENT_TO_SUBDIR_MAP: Record<string, string>;
+/**
+ * v2.1.0: File names within each subdirectory
+ */
+export declare const AGENT_TO_FILENAME_MAP: Record<string, string>;
+/**
  * Generated spec file names
  */
 export declare const GENERATED_SPEC_FILES: readonly ["overview.md", "module.md", "entity.md", "database.md", "data_mapping.md", "events.md", "api.md", "dependencies.md", "service_dependencies.md", "authentication.md", "authorization.md", "security.md", "prompt_security.md", "deployment.md", "monitoring.md", "ml_services.md", "feature_flags.md"];
@@ -468,5 +568,158 @@ export interface ParsedIndex {
     preamble?: string;
     /** Any content after MANUAL:END */
     postamble?: string;
+}
+/**
+ * Category of prompt
+ */
+export type PromptCategory = 'analysis' | 'document' | 'audit' | 'diagram' | 'template';
+/**
+ * Types of Mermaid diagrams supported
+ */
+export type DiagramType = 'sequence' | 'flowchart' | 'erd' | 'classDiagram' | 'stateDiagram' | 'c4' | 'gantt' | 'pie';
+/**
+ * Prompt definition in registry
+ */
+export interface PromptDefinition {
+    /** Unique ID: "category/name" e.g. "api/detect-endpoints" */
+    id: string;
+    /** Prompt category */
+    category: PromptCategory;
+    /** Repository types this prompt applies to */
+    applicableTo: RepoType[];
+    /** Features that must be detected to use this prompt */
+    requiredFeatures?: string[];
+    /** Prompts that must be completed before this one */
+    dependsOn: string[];
+    /** What this prompt produces (used for dependencies) */
+    produces: string[];
+    /** Template ID to use for formatting output */
+    templateId?: string;
+    /** Diagrams to generate */
+    diagrams: DiagramType[];
+    /** Output file name (relative to _generated/) */
+    outputFile: string;
+    /** Priority for ordering when multiple match */
+    priority: number;
+    /** Optional if features missing */
+    optional: boolean;
+}
+/**
+ * Loaded prompt with content and metadata
+ */
+export interface LoadedPromptV2 {
+    /** Prompt definition from registry */
+    definition: PromptDefinition;
+    /** Prompt content (markdown) */
+    content: string;
+    /** Version extracted from content */
+    version: string;
+    /** MD5 hash (8 chars) for traceability */
+    hash: string;
+}
+/**
+ * Context for prompt routing
+ */
+export interface RoutingContext {
+    /** Repository type */
+    repoType: RepoType;
+    /** Detected features from FeatureDetector */
+    detectedFeatures: Set<string>;
+    /** Set of completed agent/prompt IDs */
+    completedAgents: Set<string>;
+    /** Summaries from previous agents (for context) */
+    previousOutputs: Map<string, string>;
+    /** Current agent ID being routed */
+    currentAgentId: string;
+}
+/**
+ * Routed prompt ready for LLM
+ */
+export interface RoutedPrompt {
+    /** System prompt (role + guidelines) */
+    systemPrompt: string;
+    /** Specific analysis prompt */
+    analysisPrompt: string;
+    /** Output schema (SPEC-OS format) */
+    outputSchema: string;
+    /** Instructions for diagram generation */
+    diagramInstructions: DiagramInstruction[];
+    /** Template ID to use */
+    templateId?: string;
+    /** Metadata for traceability */
+    metadata: {
+        promptId: string;
+        version: string;
+        hash: string;
+    };
+}
+/**
+ * Instruction for generating a diagram
+ */
+export interface DiagramInstruction {
+    /** Diagram type */
+    type: DiagramType;
+    /** Description of what to generate */
+    description: string;
+    /** Output file name (e.g. "overview-c4.mmd") */
+    outputFile: string;
+    /** Whether to also include inline in document */
+    inline: boolean;
+}
+/**
+ * Configuration for a planned agent in the DAG
+ */
+export interface PlannedAgent {
+    /** Unique agent ID (used for dependencies) */
+    id: string;
+    /** Prompt ID to use from PromptRegistry */
+    promptId: string;
+    /** Template ID for output formatting (optional) */
+    templateId?: string;
+    /** Dependencies (other agent IDs that must complete first) */
+    dependencies: string[];
+    /** Can be executed in parallel with others in same layer */
+    parallel: boolean;
+    /** Optional agent (skip if fails or dependencies fail) */
+    optional: boolean;
+    /** Diagram types to generate */
+    diagrams: DiagramType[];
+    /** Output file path relative to _generated/ */
+    outputFile: string;
+    /** Layer number in DAG (for ordering) */
+    layer: number;
+}
+/**
+ * Planned DAG structure for execution
+ */
+export interface PlannedDAG {
+    /** Version of the planning algorithm */
+    version: string;
+    /** Repository type this DAG is for */
+    repoType: RepoType;
+    /** All planned agents */
+    agents: PlannedAgent[];
+    /** Agents grouped by layer for parallel execution */
+    layers: PlannedAgent[][];
+    /** Metadata about the plan */
+    metadata: {
+        /** Total number of agents */
+        totalAgents: number;
+        /** Number of optional agents */
+        optionalAgents: number;
+        /** Estimated execution duration */
+        estimatedDuration: string;
+        /** Detected features that influenced planning */
+        features: string[];
+    };
+}
+/**
+ * Result of skip decision for an agent
+ */
+export interface SkipResult {
+    /** Whether to skip */
+    skip: boolean;
+    /** Reason for skipping (if skip is true) */
+    reason?: string;
 }
 //# sourceMappingURL=types.d.ts.map

@@ -2,7 +2,7 @@
 
 > **Creato:** 2026-01-16
 > **Versione Target:** 2.1.0
-> **Stato:** 🟢 SPRINT 1-4 COMPLETATI | 🔵 SPRINT 5 READY
+> **Stato:** 🟢 SPRINT 1-6 COMPLETATI | 🟢 UPGRADE v2.1.0 READY
 > **Architect:** AI Dev Swarm
 
 ---
@@ -14,10 +14,11 @@
 | Sprint Totali | 6 |
 | Effort Stimato | ~127h |
 | Durata Stimata | 12-15 giorni |
-| Priorità Corrente | Sprint 5 |
+| Priorità Corrente | Sprint 6 |
 | Task Atomiche S1+S2+S3 | 44 subtask |
 | Task Atomiche S4 | 17 subtask |
 | Task Atomiche S5 | 17 subtask |
+| Task Atomiche S6 | 17 subtask |
 
 ---
 
@@ -1521,7 +1522,7 @@ fill(template: LoadedTemplate, variables: TemplateVariables): string {
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T1.4 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `src/core/template-loader.test.ts`
 
@@ -1597,7 +1598,7 @@ export interface GenericAgentOutput {
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T2.1, S4-T1.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `src/agents/generic-analysis.agent.ts`
 
@@ -1650,7 +1651,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T2.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/agents/generic-analysis.agent.ts`
 
@@ -1672,7 +1673,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T2.2, S4-T1.3 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/agents/generic-analysis.agent.ts`
 
@@ -1694,7 +1695,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T2.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/agents/generic-analysis.agent.ts`
 
@@ -1716,7 +1717,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T2.3, S4-T2.4, S4-T2.5 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/agents/generic-analysis.agent.ts`
 
@@ -1740,7 +1741,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T2.6 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `src/agents/generic-analysis.agent.test.ts`
 
@@ -1766,7 +1767,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T1.4 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `templates/api/endpoint.md`
 
@@ -1789,7 +1790,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T1.4 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `templates/ui/component.md`
 
@@ -1812,7 +1813,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T1.4 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `templates/auth/flow.md`
 
@@ -1835,7 +1836,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T1.4 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `templates/entity/model.md`
 
@@ -1858,7 +1859,7 @@ export class GenericAnalysisAgent extends SubAgent {
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S4-T1.4 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `templates/feature/spec.md`
 
@@ -2102,7 +2103,78 @@ export class DiagramGenerator {
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
+
+---
+
+#### S5-T1.4: Implementare generateSequence() ed extractFlows()
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S5-T1.4 |
+| **Titolo** | Implementare generazione Sequence Diagram |
+| **Tipo** | feature |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S5-T1.2 |
+| **Status** | ✅ completed |
+
+---
+
+#### S5-T1.5: Implementare generateFlowchart() ed extractSteps()
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S5-T1.5 |
+| **Titolo** | Implementare generazione Flowchart Diagram |
+| **Tipo** | feature |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S5-T1.2 |
+| **Status** | ✅ completed |
+
+---
+
+#### S5-T1.6: Implementare generateClassDiagram() e generateStateDiagram()
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S5-T1.6 |
+| **Titolo** | Implementare Class Diagram e State Diagram |
+| **Tipo** | feature |
+| **Effort** | 2h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S5-T1.2 |
+| **Status** | ✅ completed |
+
+---
+
+#### S5-T1.7: Implementare generate() main method
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S5-T1.7 |
+| **Titolo** | Implementare metodo generate() con switch e validazione |
+| **Tipo** | feature |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S5-T1.3, S5-T1.4, S5-T1.5, S5-T1.6 |
+| **Status** | ✅ completed |
+
+---
+
+#### S5-T1.8: Implementare generateC4()
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S5-T1.8 |
+| **Titolo** | Implementare generazione C4 Context Diagram |
+| **Tipo** | feature |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S5-T1.2 |
+| **Status** | ✅ completed |
+
 
 **File:** `src/core/diagram-generator.ts`
 
@@ -2128,7 +2200,7 @@ Implementare estrazione entità da markdown e generazione ERD Mermaid.
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/core/diagram-generator.ts`
 
@@ -2154,7 +2226,7 @@ Implementare estrazione flussi API/auth e generazione Sequence Diagram.
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/core/diagram-generator.ts`
 
@@ -2180,7 +2252,7 @@ Implementare estrazione logica/decisioni e generazione Flowchart.
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/core/diagram-generator.ts`
 
@@ -2207,7 +2279,7 @@ Implementare generazione Class Diagram (tipi/interfacce) e State Diagram (stati/
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.3, S5-T1.4, S5-T1.5, S5-T1.6 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/core/diagram-generator.ts`
 
@@ -2232,7 +2304,7 @@ Implementare metodo principale che dispatch ai generatori specifici.
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.2 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/core/diagram-generator.ts`
 
@@ -2260,7 +2332,7 @@ Implementare estrazione componenti architetturali e generazione C4 Diagram.
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.7 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/agents/generic-analysis.agent.ts`
 
@@ -2285,7 +2357,7 @@ Integrare DiagramGenerator nel flusso process() dell'agente generico.
 | **Effort** | 1.5h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T2.1 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `src/agents/spec-zero/finalizer/write-specs.agent.ts`
 
@@ -2293,10 +2365,10 @@ Integrare DiagramGenerator nel flusso process() dell'agente generico.
 Modificare WriteSpecsAgent per scrivere file .mmd standalone con frontmatter.
 
 **Acceptance Criteria:**
-- [ ] `writeDiagrams()` scrive in `_generated/_diagrams/`
-- [ ] Ogni file ha YAML frontmatter con uid, type, source
-- [ ] Nome file segue pattern `{agent-id}-{diagram-type}.mmd`
-- [ ] Link nel documento spec punta a file standalone
+- [x] `writeDiagrams()` scrive in `_generated/_diagrams/`
+- [x] Ogni file ha YAML frontmatter con uid, type, source
+- [x] Nome file segue pattern `{agent-id}-{diagram-type}.mmd`
+- [x] Link nel documento spec punta a file standalone
 
 ---
 
@@ -2310,7 +2382,7 @@ Modificare WriteSpecsAgent per scrivere file .mmd standalone con frontmatter.
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T1.7, S5-T1.8 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `src/core/diagram-generator.test.ts`
 
@@ -2336,7 +2408,7 @@ Modificare WriteSpecsAgent per scrivere file .mmd standalone con frontmatter.
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T2.3 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `prompts/api/detect-endpoints.md`
 
@@ -2348,12 +2420,12 @@ Prompt per analisi approfondita di endpoint API con:
 - Generazione documentazione OpenAPI-like
 
 **Acceptance Criteria:**
-- [ ] Header `<!-- version=1 -->`
-- [ ] Sezione istruzioni rilevamento framework (Express, Fastify, etc.)
-- [ ] Tabella output con: method, path, params, body, response, auth
-- [ ] Istruzioni per sequence diagram dei flussi principali
-- [ ] Almeno 100 righe di contenuto
-- [ ] Evidence requirements con citazioni file:linea
+- [x] Header `<!-- version=1 -->`
+- [x] Sezione istruzioni rilevamento framework (Express, Fastify, etc.)
+- [x] Tabella output con: method, path, params, body, response, auth
+- [x] Istruzioni per sequence diagram dei flussi principali
+- [x] Almeno 100 righe di contenuto
+- [x] Evidence requirements con citazioni file:linea
 
 ---
 
@@ -2369,7 +2441,7 @@ Prompt per analisi approfondita di endpoint API con:
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T2.3 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `prompts/ui/detect-components.md`
 
@@ -2381,12 +2453,12 @@ Prompt per analisi componenti UI con:
 - Generazione component tree
 
 **Acceptance Criteria:**
-- [ ] Header `<!-- version=1 -->`
-- [ ] Sezione istruzioni per React, Vue, Angular
-- [ ] Tabella output con: name, props, state, events, children
-- [ ] Istruzioni per class diagram dei componenti
-- [ ] Almeno 100 righe di contenuto
-- [ ] Evidence requirements con citazioni file:linea
+- [x] Header `<!-- version=1 -->`
+- [x] Sezione istruzioni per React, Vue, Angular
+- [x] Tabella output con: name, props, state, events, children
+- [x] Istruzioni per class diagram dei componenti
+- [x] Almeno 100 righe di contenuto
+- [x] Evidence requirements con citazioni file:linea
 
 ---
 
@@ -2402,7 +2474,7 @@ Prompt per analisi componenti UI con:
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T2.3 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `prompts/auth/detect-auth.md`
 
@@ -2414,12 +2486,12 @@ Prompt per analisi autenticazione con:
 - Generazione security flow
 
 **Acceptance Criteria:**
-- [ ] Header `<!-- version=1 -->`
-- [ ] Sezione istruzioni per JWT, Passport, NextAuth, Auth0
-- [ ] Tabella output con: provider, strategy, protected_routes, token_lifetime
-- [ ] Istruzioni per sequence diagram flusso login/logout
-- [ ] Sezione security considerations
-- [ ] Almeno 100 righe di contenuto
+- [x] Header `<!-- version=1 -->`
+- [x] Sezione istruzioni per JWT, Passport, NextAuth, Auth0
+- [x] Tabella output con: provider, strategy, protected_routes, token_lifetime
+- [x] Istruzioni per sequence diagram flusso login/logout
+- [x] Sezione security considerations
+- [x] Almeno 100 righe di contenuto
 
 ---
 
@@ -2435,7 +2507,7 @@ Prompt per analisi autenticazione con:
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T2.3 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `prompts/data/detect-schema.md`
 
@@ -2447,12 +2519,12 @@ Prompt per analisi database/ORM con:
 - Generazione ERD
 
 **Acceptance Criteria:**
-- [ ] Header `<!-- version=1 -->`
-- [ ] Sezione istruzioni per Prisma, TypeORM, Mongoose, Drizzle
-- [ ] Tabella output con: entity, fields, relations, indexes
-- [ ] Istruzioni per ERD diagram
-- [ ] Sezione migration analysis
-- [ ] Almeno 100 righe di contenuto
+- [x] Header `<!-- version=1 -->`
+- [x] Sezione istruzioni per Prisma, TypeORM, Mongoose, Drizzle
+- [x] Tabella output con: entity, fields, relations, indexes
+- [x] Istruzioni per ERD diagram
+- [x] Sezione migration analysis
+- [x] Almeno 100 righe di contenuto
 
 ---
 
@@ -2468,7 +2540,7 @@ Prompt per analisi database/ORM con:
 | **Effort** | 2h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T2.3 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File da creare:** `prompts/feature/spec-from-task.md`
 
@@ -2480,12 +2552,12 @@ Prompt per generazione specifica da descrizione task con:
 - Link a spec esistenti
 
 **Acceptance Criteria:**
-- [ ] Header `<!-- version=1 -->`
-- [ ] Input: task description, context from previous analysis
-- [ ] Output: user stories, acceptance criteria, tech requirements
-- [ ] Sezione affected components con link edges
-- [ ] Istruzioni per flowchart implementazione
-- [ ] Almeno 80 righe di contenuto
+- [x] Header `<!-- version=1 -->`
+- [x] Input: task description, context from previous analysis
+- [x] Output: user stories, acceptance criteria, tech requirements
+- [x] Sezione affected components con link edges
+- [x] Istruzioni per flowchart implementazione
+- [x] Almeno 80 righe di contenuto
 
 ---
 
@@ -2499,7 +2571,7 @@ Prompt per generazione specifica da descrizione task con:
 | **Effort** | 1h |
 | **Agent** | coder-backend |
 | **Dipendenze** | S5-T3.1, S5-T4.1, S5-T5.1, S5-T6.1, S5-T7.1 |
-| **Status** | 🔵 pending |
+| **Status** | ✅ completed |
 
 **File:** `prompts/_registry.json`
 
@@ -2507,13 +2579,13 @@ Prompt per generazione specifica da descrizione task con:
 Aggiungere le 5 nuove definizioni prompt con metadata completi.
 
 **Acceptance Criteria:**
-- [ ] `api/detect-endpoints` con diagrams: ['sequence']
-- [ ] `ui/detect-components` con diagrams: ['classDiagram', 'flowchart']
-- [ ] `auth/detect-auth` con diagrams: ['sequence', 'stateDiagram']
-- [ ] `data/detect-schema` con diagrams: ['erd']
-- [ ] `feature/spec-from-task` con diagrams: ['flowchart']
-- [ ] Tutte le dipendenze correttamente definite
-- [ ] Priority e optional corretti
+- [x] `api/detect-endpoints` con diagrams: ['sequence']
+- [x] `ui/detect-components` con diagrams: ['classDiagram', 'flowchart']
+- [x] `auth/detect-auth` con diagrams: ['sequence', 'stateDiagram']
+- [x] `data/detect-schema` con diagrams: ['erd']
+- [x] `feature/spec-from-task` con diagrams: ['flowchart']
+- [x] Tutte le dipendenze correttamente definite
+- [x] Priority e optional corretti
 
 ---
 
@@ -2529,9 +2601,9 @@ Aggiungere le 5 nuove definizioni prompt con metadata completi.
 | S5-T1.6 | generateClass + State | 2h | ✅ (dopo S5-T1.2) |
 | S5-T1.7 | generate() main | 1h | - |
 | S5-T1.8 | generateC4() | 1.5h | ✅ (dopo S5-T1.2) |
-| S5-T2.1 | Inline integration | 1.5h | - |
+| S5-T2.1 | Inline integration | 1.5h | ✅ |
 | S5-T2.2 | Standalone .mmd files | 1.5h | - |
-| S5-T2.3 | Test DiagramGenerator | 2h | ✅ (dopo S5-T1.7) |
+| S5-T2.3 | Test DiagramGenerator | 2h | ✅ |
 | S5-T3.1 | api/detect-endpoints.md | 2h | ✅ |
 | S5-T4.1 | ui/detect-components.md | 2h | ✅ |
 | S5-T5.1 | auth/detect-auth.md | 2h | ✅ |
@@ -2556,21 +2628,647 @@ Aggiungere le 5 nuove definizioni prompt con metadata completi.
 
 ---
 
-## 📋 SPRINT 6 (OVERVIEW)
+## 📋 SPRINT 6: CLI & Validation (DETTAGLIO ATOMICO)
 
-### SPRINT 6: CLI + Validation + Testing
-**Status:** 🔵 PENDING
-**Dipendenze:** Sprint 5
-**Effort:** ~20h
+**Status:** 🟡 IN PROGRESS
+**Goal:** CLI v2.1.0, Test E2E, Validazione Manifest, Documentazione
+**Effort Totale:** ~22h (effettivo ~11h con parallelizzazione)
+**Dipendenze:** Sprint 5 (DiagramGenerator, Prompt Library) ✅
 
-| ID | Task | Effort |
-|----|------|--------|
-| S6-T1 | Comandi `template list/use/create` | 4h |
-| S6-T2 | Comandi `gen:api/component/entity/feature` | 4h |
-| S6-T3 | Validazione JSON Schema | 4h |
-| S6-T4 | Aggiornare `.specrc.json` | 2h |
-| S6-T5 | Testing su repo campione | 4h |
-| S6-T6 | Documentazione utente | 2h |
+### Grafo Dipendenze Sprint 6
+
+```
+S6-T1.1 (CLI types) ──────────────────────────────────────────────────────────┐
+          │                                                                    │
+          ▼                                                                    │
+S6-T1.2 (CLI module scaffolding)                                              │
+          │                                                                    │
+          ├──► S6-T1.3 (flag --smart-dag) ────────────┐                       │
+          │                                            │                       │
+          ├──► S6-T1.4 (flag --diagrams) ─────────────┼──► S6-T1.6 (index.ts) │
+          │                                            │         │             │
+          └──► S6-T1.5 (flag --template) ─────────────┘         │             │
+                                                                 │             │
+S6-T2.1 (test fixture repo) ◄────────────────────────────────────┤             │
+          │                                                      │             │
+          ├──► S6-T2.2 (E2E analyze) ────────┐                   │             │
+          │                                   │                   │             │
+          ├──► S6-T2.3 (E2E DAG + diagrams) ──┼──► S6-T2.5 (E2E validation)   │
+          │                                   │         │         │             │
+          └──► S6-T2.4 (E2E write) ──────────┘         │         │             │
+                                                        │         │             │
+S6-T3.1 (manifest-validator) ◄──────────────────────────┼─────────┘             │
+          │                                             │                       │
+          ▼                                             │                       │
+S6-T3.2 (integrate in SubmoduleManager) ◄───────────────┘                       │
+          │                                                                      │
+          ▼                                                                      │
+S6-T3.3 (test manifest validation) ◄────────────────────────────────────────────┘
+          │
+          ▼
+S6-T4.1 (README update) ─────┬──► S6-T4.2 (CLI help text)
+                             │
+S6-T4.3 (CHANGELOG update) ──┘
+```
+
+---
+
+### S6-T1: CLI Update per v2.1.0
+
+#### S6-T1.1: Definire tipi CLI Options
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T1.1 |
+| **Titolo** | Aggiungere tipi CLIOptions, AnalyzeOptions, GenerateOptions a types.ts |
+| **Tipo** | feature |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | - |
+| **Status** | ✅ completed |
+
+**File:** `src/types.ts`
+
+**Descrizione:**
+Aggiungere le interfacce per le opzioni CLI v2.1.0:
+```typescript
+export interface CLIBaseOptions {
+    verbose?: boolean;
+    dryRun?: boolean;
+    outputDir?: string;
+}
+
+export interface AnalyzeOptions extends CLIBaseOptions {
+    smartDag?: boolean;         // Use SmartDAGPlanner
+    diagrams?: 'inline' | 'standalone' | 'both' | 'none';
+    template?: string;          // Template ID to use
+    skipAgents?: string[];      // Agent IDs to skip
+    features?: string[];        // Force feature flags
+}
+
+export interface GenerateOptions extends CLIBaseOptions {
+    type: 'api' | 'component' | 'entity' | 'feature';
+    name: string;
+    template?: string;
+}
+```
+
+**Acceptance Criteria:**
+- [ ] `CLIBaseOptions` con verbose, dryRun, outputDir
+- [ ] `AnalyzeOptions` con smartDag, diagrams, template, skipAgents, features
+- [ ] `GenerateOptions` con type, name, template
+- [ ] Export corretto di tutti i nuovi tipi
+
+---
+
+#### S6-T1.2: Creare modulo src/core/cli.ts
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T1.2 |
+| **Titolo** | Creare modulo CLI separato con parsing argomenti |
+| **Tipo** | feature |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.1 |
+| **Status** | 🔵 pending |
+
+**File da creare:** `src/core/cli.ts`
+
+**Descrizione:**
+```typescript
+export interface ParsedArgs {
+    command: 'analyze' | 'generate' | 'validate' | 'help';
+    options: AnalyzeOptions | GenerateOptions | CLIBaseOptions;
+}
+
+export function parseArgs(args: Record<string, any>): ParsedArgs {
+    // Parse and validate CLI arguments
+}
+
+export function validateOptions(options: any, schema: 'analyze' | 'generate'): boolean {
+    // Validate options against expected schema
+}
+
+export function getDefaultOptions(command: string): CLIBaseOptions {
+    // Return sensible defaults
+}
+```
+
+**Acceptance Criteria:**
+- [ ] File `src/core/cli.ts` creato ed esportato
+- [ ] `parseArgs()` riconosce tutti i flag v2.1.0
+- [ ] `validateOptions()` verifica tipi e valori
+- [ ] `getDefaultOptions()` ritorna defaults ragionevoli
+- [ ] TypeScript compila senza errori
+
+---
+
+#### S6-T1.3: Implementare flag --smart-dag
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T1.3 |
+| **Titolo** | Aggiungere supporto per --smart-dag / --no-smart-dag |
+| **Tipo** | feature |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.2 |
+| **Status** | 🔵 pending |
+
+**File:** `src/core/cli.ts`, `src/agents/core/orchestrator.agent.ts`
+
+**Descrizione:**
+Implementare flag per abilitare/disabilitare SmartDAGPlanner:
+- `--smart-dag` (default true): Usa SmartDAGPlanner per selezione dinamica agenti
+- `--no-smart-dag`: Usa DAG statico legacy
+
+**Acceptance Criteria:**
+- [ ] Flag `--smart-dag` parsato correttamente
+- [ ] Orchestrator rispetta flag smartDag
+- [ ] Default è `true` per v2.1.0
+- [ ] Backward compatible con chiamate senza flag
+
+---
+
+#### S6-T1.4: Implementare flag --diagrams
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T1.4 |
+| **Titolo** | Aggiungere supporto per --diagrams [inline|standalone|both|none] |
+| **Tipo** | feature |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.2 |
+| **Status** | 🔵 pending |
+
+**File:** `src/core/cli.ts`, `src/agents/generic-analysis.agent.ts`
+
+**Descrizione:**
+Implementare flag per controllare output diagrammi:
+- `--diagrams inline`: Solo diagrammi inline nel markdown
+- `--diagrams standalone`: Solo file .mmd separati
+- `--diagrams both` (default): Entrambi
+- `--diagrams none`: Nessun diagramma
+
+**Acceptance Criteria:**
+- [ ] Flag `--diagrams` parsato con enum validation
+- [ ] GenericAnalysisAgent rispetta opzione
+- [ ] WriteSpecsAgent rispetta opzione per standalone
+- [ ] Default è `both`
+
+---
+
+#### S6-T1.5: Implementare flag --template
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T1.5 |
+| **Titolo** | Aggiungere supporto per --template [templateId] |
+| **Tipo** | feature |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.2 |
+| **Status** | 🔵 pending |
+
+**File:** `src/core/cli.ts`, `src/agents/generic-analysis.agent.ts`
+
+**Descrizione:**
+Implementare flag per override template:
+- `--template api/endpoint`: Forza uso di template specifico
+- Validazione che template esista
+
+**Acceptance Criteria:**
+- [ ] Flag `--template` parsato correttamente
+- [ ] Validazione esistenza template
+- [ ] Override funziona in GenericAnalysisAgent
+- [ ] Error message chiaro se template non esiste
+
+---
+
+#### S6-T1.6: Integrare CLI in index.ts
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T1.6 |
+| **Titolo** | Integrare CLI in index.ts |
+| **Tipo** | enhancement |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.3, S6-T1.4, S6-T1.5 |
+| **Status** | 🔵 pending |
+
+
+**File:** `src/index.ts`
+
+**Descrizione:**
+Aggiornare i tool definitions per supportare nuovi flag:
+```typescript
+'repo_spec_zero_analyze': {
+    args: {
+        // ... existing args ...
+        smartDag: z.boolean().describe('Use SmartDAGPlanner for dynamic agent selection').optional(),
+        diagrams: z.enum(['inline', 'standalone', 'both', 'none']).describe('Diagram output mode').optional(),
+        template: z.string().describe('Template ID to use for output').optional(),
+        skipAgents: z.array(z.string()).describe('Agent IDs to skip').optional(),
+    },
+    // ...
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Tool `repo_spec_zero_analyze` espone nuovi args
+- [ ] Args passati correttamente all'orchestrator
+- [ ] Backward compatible (vecchie chiamate funzionano)
+- [ ] Version bumped a 2.1.0 nel toast
+
+---
+
+### S6-T2: Test Integrazione End-to-End
+
+#### S6-T2.1: Creare fixture repository di test
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T2.1 |
+| **Titolo** | Creare test/__fixtures__/sample-fullstack-repo/ |
+| **Tipo** | test |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | - |
+| **Status** | ✅ completed |
+
+**Directory da creare:** `test/__fixtures__/sample-fullstack-repo/`
+
+**Descrizione:**
+Creare un mini-repo fullstack di esempio per testing E2E:
+```
+sample-fullstack-repo/
+├── package.json          # Express + React deps
+├── src/
+│   ├── server/
+│   │   ├── index.ts      # Express entry
+│   │   ├── routes/
+│   │   │   └── users.ts  # Sample REST routes
+│   │   └── models/
+│   │       └── User.ts   # Sample Prisma model
+│   └── client/
+│       ├── App.tsx       # React app
+│       └── components/
+│           └── UserList.tsx
+├── prisma/
+│   └── schema.prisma     # Sample schema
+└── .env.example          # Sample env
+```
+
+**Acceptance Criteria:**
+- [ ] Fixture creata con struttura fullstack
+- [ ] package.json con deps rilevanti (Express, React, Prisma)
+- [ ] Almeno 5 file di codice significativi
+- [ ] Gitignored (non committare .env)
+
+---
+
+#### S6-T2.2: Test E2E: FeatureDetector -> SmartDAGPlanner
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T2.2 |
+| **Titolo** | Test E2E pipeline analysis (detect -> plan) |
+| **Tipo** | test |
+| **Effort** | 2h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T2.1 |
+| **Status** | 🔵 pending |
+
+**File da creare:** `test/e2e/analysis-pipeline.e2e.test.ts`
+
+**Descrizione:**
+Test E2E che verifica:
+1. FeatureDetector rileva correttamente features del sample repo
+2. SmartDAGPlanner genera DAG appropriato
+3. Agenti corretti selezionati (backend + frontend + db)
+
+**Acceptance Criteria:**
+- [ ] Test rileva repoType='fullstack'
+- [ ] Test verifica features: hasBackend, hasFrontend, hasDatabase
+- [ ] Test verifica DAG include agenti corretti
+- [ ] Test verifica ordine layer corretto
+
+---
+
+#### S6-T2.3: Test E2E: DAG Execution -> DiagramGenerator
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T2.3 |
+| **Titolo** | Test E2E pipeline execution (DAG -> diagrams) |
+| **Tipo** | test |
+| **Effort** | 2h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T2.1 |
+| **Status** | 🔵 pending |
+
+**File:** `test/e2e/analysis-pipeline.e2e.test.ts`
+
+**Descrizione:**
+Test E2E che verifica:
+1. DAGExecutor esegue agenti in ordine corretto
+2. GenericAnalysisAgent genera output con diagrammi
+3. DiagramGenerator produce Mermaid valido
+
+**Acceptance Criteria:**
+- [ ] Test verifica esecuzione layer 0 prima di layer 1
+- [ ] Test verifica output contiene diagrammi Mermaid
+- [ ] Test verifica almeno 1 ERD generato per entities
+- [ ] Test verifica almeno 1 sequence diagram per API flow
+
+---
+
+#### S6-T2.4: Test E2E: WriteSpecs -> Filesystem
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T2.4 |
+| **Titolo** | Test E2E pipeline output (write -> verify structure) |
+| **Tipo** | test |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T2.1 |
+| **Status** | 🔵 pending |
+
+**File:** `test/e2e/analysis-pipeline.e2e.test.ts`
+
+**Descrizione:**
+Test E2E che verifica:
+1. WriteSpecsAgent scrive file nella struttura corretta
+2. Struttura gerarchica 00-07 creata
+3. File .mmd standalone in _diagrams/
+4. index.md generato con link corretti
+
+**Acceptance Criteria:**
+- [ ] Test verifica creazione `_generated/00-foundation/`
+- [ ] Test verifica creazione `_generated/_diagrams/`
+- [ ] Test verifica contenuto file spec valido
+- [ ] Test verifica link in index.md funzionanti
+
+---
+
+#### S6-T2.5: Test E2E: Full Pipeline Validation
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T2.5 |
+| **Titolo** | Test E2E validazione completa pipeline |
+| **Tipo** | test |
+| **Effort** | 2h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T2.2, S6-T2.3, S6-T2.4 |
+| **Status** | 🔵 pending |
+
+**File:** `test/e2e/analysis-pipeline.e2e.test.ts`
+
+**Descrizione:**
+Test E2E che esegue pipeline completa e valida risultato:
+1. Chiama analyze su sample repo
+2. Verifica tutti i file generati
+3. Valida manifest v2.1 corretto
+4. Verifica nessun errore/warning
+
+**Acceptance Criteria:**
+- [ ] Test passa con sample-fullstack-repo
+- [ ] Manifest contiene schema_version='2.1'
+- [ ] Tutti i file in file_locations esistono
+- [ ] Nessun errore in console
+- [ ] Tempo esecuzione < 60s (mock LLM)
+
+---
+
+### S6-T3: Validazione Manifest v2.1.0
+
+#### S6-T3.1: Creare manifest-validator.ts
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T3.1 |
+| **Titolo** | Creare src/core/manifest-validator.ts con JSON Schema |
+| **Tipo** | feature |
+| **Effort** | 2h |
+| **Agent** | coder-backend |
+| **Dipendenze** | - |
+| **Status** | ✅ completed |
+
+**File da creare:** `src/core/manifest-validator.ts`
+
+**Descrizione:**
+Creare validatore con JSON Schema per manifest v2.1:
+```typescript
+import Ajv from 'ajv';
+
+const MANIFEST_SCHEMA_V21 = {
+    type: 'object',
+    required: ['schema_version', 'project_slug', 'repo_path', 'files'],
+    properties: {
+        schema_version: { enum: ['2.0', '2.1'] },
+        folder_structure_version: { enum: ['1.0', '2.0'] },
+        structure_hash: { type: 'string', pattern: '^[a-f0-9]{8}$' },
+        file_locations: { type: 'object' },
+        // ... altri campi
+    }
+};
+
+export class ManifestValidator {
+    validate(manifest: any): ValidationResult;
+    validateFileLocations(manifest: any, specsPath: string): ValidationResult;
+    repairManifest(manifest: any): SpecsManifest;
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Schema JSON valido per manifest v2.1
+- [ ] `validate()` ritorna errori dettagliati
+- [ ] `validateFileLocations()` verifica file esistono
+- [ ] `repairManifest()` corregge problemi comuni
+- [ ] Supporto backward compatibility v2.0
+
+---
+
+#### S6-T3.2: Integrare validazione in SubmoduleManager
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T3.2 |
+| **Titolo** | Aggiungere validazione manifest a readManifest/writeManifest |
+| **Tipo** | enhancement |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T3.1 |
+| **Status** | 🔵 pending |
+
+**File:** `src/skills/submodule-manager.skill.ts`
+
+**Descrizione:**
+Integrare validazione:
+- `readManifest()`: Valida dopo lettura, log warning se problemi
+- `writeManifest()`: Valida prima di scrittura, blocca se invalido
+
+**Acceptance Criteria:**
+- [ ] `readManifest()` valida e logga warning
+- [ ] `writeManifest()` blocca scrittura manifest invalido
+- [ ] Error message chiaro con campo/valore errato
+- [ ] Nessuna regressione su manifest v2.0 esistenti
+
+---
+
+#### S6-T3.3: Test suite ManifestValidator
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T3.3 |
+| **Titolo** | Unit test per ManifestValidator |
+| **Tipo** | test |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T3.1, S6-T3.2 |
+| **Status** | 🔵 pending |
+
+**File da creare:** `src/core/manifest-validator.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Almeno 10 test cases
+- [ ] Test manifest valido v2.1
+- [ ] Test manifest valido v2.0 (backward compat)
+- [ ] Test manifest invalido (missing fields)
+- [ ] Test validateFileLocations con file mancanti
+- [ ] Coverage > 80%
+
+---
+
+### S6-T4: Documentazione
+
+#### S6-T4.1: Update README.md
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T4.1 |
+| **Titolo** | Aggiornare README con nuove feature v2.1.0 |
+| **Tipo** | docs |
+| **Effort** | 1.5h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.6 |
+| **Status** | 🔵 pending |
+
+**File:** `README.md`
+
+**Descrizione:**
+Aggiornare README con:
+- Sezione "What's New in v2.1.0"
+- Nuovi flag CLI documentati
+- Esempi output gerarchico
+- Sezione diagrammi Mermaid
+
+**Acceptance Criteria:**
+- [ ] Versione aggiornata a 2.1.0
+- [ ] Sezione "What's New" con changelog
+- [ ] Documentazione tutti i nuovi flag
+- [ ] Screenshot/esempio output structure
+- [ ] Sezione diagrammi con esempio Mermaid
+
+---
+
+#### S6-T4.2: Update CLI help text
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T4.2 |
+| **Titolo** | Aggiornare help text nei tool descriptions |
+| **Tipo** | docs |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.6 |
+| **Status** | 🔵 pending |
+
+**File:** `src/index.ts`
+
+**Descrizione:**
+Migliorare descrizioni tool:
+- Descrizioni dettagliate per ogni arg
+- Esempi nei descriptions
+- Defaults documentati
+
+**Acceptance Criteria:**
+- [ ] Ogni arg ha description esaustiva
+- [ ] Defaults indicati nelle descriptions
+- [ ] Almeno 1 esempio per tool principale
+- [ ] TypeScript JSDoc aggiornati
+
+---
+
+#### S6-T4.3: Update CHANGELOG.md
+
+| Campo | Valore |
+|-------|--------|
+| **ID** | S6-T4.3 |
+| **Titolo** | Creare/aggiornare CHANGELOG.md per v2.1.0 |
+| **Tipo** | docs |
+| **Effort** | 1h |
+| **Agent** | coder-backend |
+| **Dipendenze** | S6-T1.6, S6-T3.2 |
+| **Status** | 🔵 pending |
+
+**File da creare/aggiornare:** `CHANGELOG.md`
+
+**Descrizione:**
+Documentare tutti i cambiamenti v2.1.0:
+- Features aggiunte
+- Breaking changes (se presenti)
+- Deprecations
+- Bug fixes
+
+**Acceptance Criteria:**
+- [ ] Formato Keep a Changelog
+- [ ] Sezione [2.1.0] con data
+- [ ] Categorie: Added, Changed, Deprecated, Fixed
+- [ ] Link a PR/issues se disponibili
+
+---
+
+### Riepilogo Sprint 6
+
+| Task ID | Titolo | Effort | Parallelizzabile | Stato |
+|---------|--------|--------|------------------|-------|
+| S6-T1.1 | Tipi CLI Options | 1h | ✅ | ✅ completed |
+| S6-T1.2 | CLI module scaffolding | 1.5h | - | ✅ completed |
+| S6-T1.3 | Flag --smart-dag | 1h | ✅ (dopo S6-T1.2) | ✅ completed |
+| S6-T1.4 | Flag --diagrams | 1h | ✅ (dopo S6-T1.2) | ✅ completed |
+| S6-T1.5 | Flag --template | 1h | ✅ (dopo S6-T1.2) | ✅ completed |
+| S6-T1.6 | Integrare CLI in index.ts | 1.5h | - | ✅ completed |
+| S6-T2.1 | Test fixture repo | 1.5h | ✅ | ✅ completed |
+| S6-T2.2 | E2E analyze | 2h | ✅ (dopo S6-T2.1) | ✅ completed |
+| S6-T2.3 | E2E DAG + diagrams | 2h | ✅ (dopo S6-T2.1) | ✅ completed |
+| S6-T2.4 | E2E write | 1.5h | ✅ (dopo S6-T2.1) | ✅ completed |
+| S6-T2.5 | E2E validation | 2h | - | ✅ completed |
+| S6-T3.1 | manifest-validator.ts | 2h | ✅ | ✅ completed |
+| S6-T3.2 | Integrate in SubmoduleManager | 1h | - | ✅ completed |
+| S6-T3.3 | Test ManifestValidator | 1.5h | ✅ (dopo S6-T3.2) | ✅ completed |
+| S6-T4.1 | README update | 1.5h | ✅ | ✅ completed |
+| S6-T4.2 | CLI help text | 1h | ✅ | ✅ completed |
+| S6-T4.3 | CHANGELOG update | 1h | ✅ | ✅ completed |
+
+**Effort Totale Sprint 6:** ~24h
+**Con Parallelizzazione:** ~11h
+
+### Waves di Esecuzione Parallela (Sprint 6)
+
+| Wave | Tasks | Effort |
+|------|-------|--------|
+| 1 | S6-T1.1, S6-T2.1, S6-T3.1 | 2h (parallelo) |
+| 2 | S6-T1.2 | 1.5h |
+| 3 | S6-T1.3, S6-T1.4, S6-T1.5, S6-T2.2, S6-T2.3, S6-T2.4 | 2h (parallelo) |
+| 4 | S6-T1.6, S6-T3.2 | 1.5h (parallelo) |
+| 5 | S6-T2.5, S6-T3.3 | 2h (parallelo) |
+| 6 | S6-T4.1, S6-T4.2, S6-T4.3 | 1.5h (parallelo) |
 
 ---
 
@@ -2605,6 +3303,38 @@ SPRINT 2 (Prompt Registry) ───┬──→ SPRINT 3 (DAG) ───┐    
 | 2026-01-16 | S4 | Task S4-T1.1, S4-T2.1 COMPLETATI | Aggiunti tipi Template e GenericAgent in types.ts |
 | 2026-01-16 | S4 | Sprint 4 COMPLETATO | TemplateLoader, GenericAnalysisAgent, 5 template, 51 test totali |
 | 2026-01-16 | S5 | /start-sprint S5 | Sprint 5 iniziato, 17 subtask atomiche aggiunte (S5-T1.1 a S5-T7.2) |
+| 2026-01-17 | S5 | Wave 3 COMPLETATO | Implementati generatori Mermaid (ERD, Sequence, Flowchart, Class, State, C4) in DiagramGenerator |
+| 2026-01-17 | S5 | S5-T2.1, S5-T2.3 COMPLETATI | Integrato DiagramGenerator in GenericAnalysisAgent e aggiunti 12 unit test |
+| 2026-01-17 | S5 | Sprint 5 COMPLETATO | DiagramGenerator, 5 prompt specializzati, registry aggiornato, 75 test totali |
+| 2026-01-17 | S6 | /start-sprint S6 | Sprint 6 iniziato (CLI & Validation), 17 subtask atomiche aggiunte (S6-T1.1 a S6-T4.3) |
+| 2026-01-17 | S6 | Wave 1 INIZIATA | Assegnati S6-T1.1, S6-T2.1, S6-T3.1 |
+| 2026-01-17 | S6 | Wave 1 COMPLETATA | Tipi CLI, Fixture repo, Manifest Validator implementati |
+| 2026-01-17 | S6 | Sprint 6 COMPLETATO | CLI v2.1.0, E2E pipeline validation, Manifest validation/repair, Docs updated |
+| 2026-01-17 | - | UPGRADE v2.1.0 COMPLETATO | Sistema modulare, Smart DAG, Mermaid diagrams, Template system |
+
+## 🚀 Assignments Correnti
+
+### 2026-01-17 11:00 → coder-backend
+**Task**: S6-T1.2, S6-T1.3, S6-T1.4, S6-T1.5, S6-T1.6
+**Spec**: SPRINT.md
+**Commit**: `feat(cli): implement v2.1.0 flags and integrate into index.ts`
+**Output**: `src/core/cli.ts`, `src/index.ts`
+
+### 2026-01-17 11:00 → test-writer
+**Task**: S6-T2.2, S6-T2.3, S6-T2.4
+**Spec**: SPRINT.md
+**Commit**: `test(e2e): implement analysis pipeline integration tests`
+**Output**: `test/e2e/analysis-pipeline.e2e.test.ts`
+**Task**: S6-T1.1, S6-T3.1
+**Spec**: SPRINT.md
+**Commit**: `feat(cli): add CLI options types`, `feat(core): implement manifest validator`
+**Output**: `src/types.ts`, `src/core/manifest-validator.ts`
+
+### 2026-01-17 10:00 → test-writer
+**Task**: S6-T2.1
+**Spec**: SPRINT.md
+**Commit**: `test(fixture): add sample-fullstack-repo for E2E`
+**Output**: `test/__fixtures__/sample-fullstack-repo/`
 
 ---
 

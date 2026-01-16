@@ -48,6 +48,7 @@ export interface AgentOutput {
     summary: string;      // Max 500 chars for token economy
     fullContent: string;  // Full content if needed
     promptVersion: PromptVersion;
+    diagrams?: StandaloneDiagram[];
     timestamp: Date;
 }
 
@@ -741,33 +742,46 @@ export const GENERATED_SUBDIRS = {
 export const AGENT_TO_SUBDIR_MAP: Record<string, string> = {
     // 00-foundation
     'overview': GENERATED_SUBDIRS.FOUNDATION,
+    'architecture': GENERATED_SUBDIRS.FOUNDATION,
     
     // 01-domain
     'entity': GENERATED_SUBDIRS.DOMAIN,
+    'entities': GENERATED_SUBDIRS.DOMAIN,
     'event': GENERATED_SUBDIRS.DOMAIN,
     
     // 02-modules
     'module': GENERATED_SUBDIRS.MODULES,
+    'backend-modules': GENERATED_SUBDIRS.MODULES,
+    'frontend-modules': GENERATED_SUBDIRS.MODULES,
+    'components': GENERATED_SUBDIRS.MODULES,
     
     // 03-api
     'api': GENERATED_SUBDIRS.API,
+    'api-rest': GENERATED_SUBDIRS.API,
+    'api-graphql': GENERATED_SUBDIRS.API,
     
     // 04-data
     'db': GENERATED_SUBDIRS.DATA,
+    'database': GENERATED_SUBDIRS.DATA,
     'data_map': GENERATED_SUBDIRS.DATA,
     
     // 05-auth
     'auth': GENERATED_SUBDIRS.AUTH,
+    'authentication': GENERATED_SUBDIRS.AUTH,
     'authz': GENERATED_SUBDIRS.AUTH,
+    'authorization': GENERATED_SUBDIRS.AUTH,
     'security': GENERATED_SUBDIRS.AUTH,
     'prompt_sec': GENERATED_SUBDIRS.AUTH,
     
     // 06-integration
     'dependency': GENERATED_SUBDIRS.INTEGRATION,
+    'dependencies': GENERATED_SUBDIRS.INTEGRATION,
     'service_dep': GENERATED_SUBDIRS.INTEGRATION,
+    'services': GENERATED_SUBDIRS.INTEGRATION,
     
     // 07-ops
     'deployment': GENERATED_SUBDIRS.OPS,
+    'cicd': GENERATED_SUBDIRS.OPS,
     'monitor': GENERATED_SUBDIRS.OPS,
     'ml': GENERATED_SUBDIRS.OPS,
     'flag': GENERATED_SUBDIRS.OPS,
@@ -778,19 +792,32 @@ export const AGENT_TO_SUBDIR_MAP: Record<string, string> = {
  */
 export const AGENT_TO_FILENAME_MAP: Record<string, string> = {
     'overview': 'overview.md',
+    'architecture': 'architecture.md',
     'entity': 'entities.md',
+    'entities': 'entities.md',
     'event': 'events.md',
     'module': 'index.md',
+    'backend-modules': 'backend/index.md',
+    'frontend-modules': 'frontend/index.md',
+    'components': 'frontend/components.md',
     'api': 'endpoints.md',
+    'api-rest': 'rest.md',
+    'api-graphql': 'graphql.md',
     'db': 'database.md',
+    'database': 'database.md',
     'data_map': 'data_mapping.md',
     'auth': 'authentication.md',
+    'authentication': 'authentication.md',
     'authz': 'authorization.md',
+    'authorization': 'authorization.md',
     'security': 'security.md',
     'prompt_sec': 'prompt_security.md',
     'dependency': 'dependencies.md',
+    'dependencies': 'dependencies.md',
     'service_dep': 'services.md',
+    'services': 'services.md',
     'deployment': 'deployment.md',
+    'cicd': 'ci-cd.md',
     'monitor': 'monitoring.md',
     'ml': 'ml_services.md',
     'flag': 'feature_flags.md',
@@ -1299,3 +1326,46 @@ export interface DiagramComponent {
     }[];
 }
 
+// ============================================================================
+// v2.1.0: CLI & VALIDATION TYPES (S6-T1.1)
+// ============================================================================
+
+/**
+ * Base options for all CLI commands
+ */
+export interface CLIBaseOptions {
+    /** Enable detailed logging */
+    verbose?: boolean;
+    /** Show what would happen without making changes */
+    dryRun?: boolean;
+    /** Override default output directory */
+    outputDir?: string;
+}
+
+/**
+ * Options for the 'analyze' command
+ */
+export interface AnalyzeOptions extends CLIBaseOptions {
+    /** Use SmartDAGPlanner for dynamic agent selection (default: true) */
+    smartDag?: boolean;
+    /** Diagram output mode */
+    diagrams?: 'inline' | 'standalone' | 'both' | 'none';
+    /** Template ID to use for output (overrides prompt default) */
+    template?: string;
+    /** Agent IDs to explicitly skip */
+    skipAgents?: string[];
+    /** Force specific feature flags for analysis */
+    features?: string[];
+}
+
+/**
+ * Options for the 'generate' command
+ */
+export interface GenerateOptions extends CLIBaseOptions {
+    /** Type of component to generate */
+    type: 'api' | 'component' | 'entity' | 'feature';
+    /** Name of the component */
+    name: string;
+    /** Template ID to use */
+    template?: string;
+}

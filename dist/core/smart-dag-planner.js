@@ -1,0 +1,513 @@
+/**
+ * SmartDAGPlanner - Builds dynamic DAG based on detected features
+ *
+ * Unlike static DAG, this:
+ * 1. Uses feature detection to determine necessary agents
+ * 2. Assigns prompts to each agent
+ * 3. Optimizes parallelism
+ * 4. Skips irrelevant agents
+ */
+import { FEATURE_FLAGS } from '../types.js';
+export class SmartDAGPlanner {
+    registry;
+    featureDetector;
+    constructor(registry, featureDetector) {
+        this.registry = registry;
+        this.featureDetector = featureDetector;
+    }
+    /**
+     * Plan DAG for a repository
+     */
+    async plan(repoPath) {
+        // 1. Detect features
+        const features = await this.featureDetector.detect(repoPath);
+        // 2. Select necessary agents
+        const agents = this.selectAgents(features);
+        // 3. Resolve dependencies and create layers
+        const layers = this.buildLayers(agents);
+        // 4. Assign prompts to each agent
+        const withPrompts = this.assignPrompts(agents, features);
+        return {
+            version: '2.1.0',
+            repoType: features.repoType,
+            agents: withPrompts,
+            layers,
+            metadata: {
+                totalAgents: agents.length,
+                optionalAgents: agents.filter(a => a.optional).length,
+                estimatedDuration: this.estimateDuration(agents),
+                features: Array.from(features.features)
+            }
+        };
+    }
+    /**
+     * Plan DAG from pre-detected features (skip detection)
+     */
+    planFromFeatures(features) {
+        const agents = this.selectAgents(features);
+        const layers = this.buildLayers(agents);
+        const withPrompts = this.assignPrompts(agents, features);
+        return {
+            version: '2.1.0',
+            repoType: features.repoType,
+            agents: withPrompts,
+            layers,
+            metadata: {
+                totalAgents: agents.length,
+                optionalAgents: agents.filter(a => a.optional).length,
+                estimatedDuration: this.estimateDuration(agents),
+                features: Array.from(features.features)
+            }
+        };
+    }
+    /**
+     * Select agents based on detected features
+     * Layers 0-4: Bootstrap, Overview, Architecture, Domain, Modules
+     */
+    selectAgents(features) {
+        const agents = [];
+        const { hasBackend, hasFrontend } = features.structure;
+        // ===== LAYER 0: Bootstrap (Always) =====
+        agents.push({
+            id: 'bootstrap',
+            promptId: 'analysis/bootstrap',
+            dependencies: [],
+            parallel: false,
+            optional: false,
+            diagrams: [],
+            outputFile: '', // No output file, just context gathering
+            layer: 0
+        });
+        // ===== LAYER 1: Overview (Always) =====
+        agents.push({
+            id: 'overview',
+            promptId: 'analysis/overview',
+            templateId: 'overview',
+            dependencies: ['bootstrap'],
+            parallel: false,
+            optional: false,
+            diagrams: ['c4', 'flowchart'],
+            outputFile: '00-foundation/overview.md',
+            layer: 1
+        });
+        // ===== LAYER 2: Architecture (Always) =====
+        agents.push({
+            id: 'architecture',
+            promptId: 'analysis/architecture',
+            dependencies: ['overview'],
+            parallel: true,
+            optional: false,
+            diagrams: ['c4', 'flowchart'],
+            outputFile: '00-foundation/architecture.md',
+            layer: 2
+        });
+        // ===== LAYER 3: Domain - Entities (Always) =====
+        agents.push({
+            id: 'entities',
+            promptId: 'analysis/entities',
+            templateId: 'entity/model',
+            dependencies: ['overview'],
+            parallel: true,
+            optional: false,
+            diagrams: ['erd', 'classDiagram'],
+            outputFile: '01-domain/entities.md',
+            layer: 3
+        });
+        // ===== LAYER 4: Modules (Conditional on structure) =====
+        if (hasBackend) {
+            agents.push({
+                id: 'backend-modules',
+                promptId: 'analysis/modules-backend',
+                dependencies: ['architecture'],
+                parallel: true,
+                optional: false,
+                diagrams: ['flowchart'],
+                outputFile: '02-modules/backend/index.md',
+                layer: 4
+            });
+        }
+        if (hasFrontend) {
+            agents.push({
+                id: 'frontend-modules',
+                promptId: 'analysis/modules-frontend',
+                dependencies: ['architecture'],
+                parallel: true,
+                optional: false,
+                diagrams: ['flowchart'],
+                outputFile: '02-modules/frontend/index.md',
+                layer: 4
+            });
+        }
+        // Continue with Layers 5-12 from helper methods
+        agents.push(...this.selectAgentsLayer5to8(features, agents));
+        agents.push(...this.selectAgentsLayer9to12(features, agents));
+        return agents;
+    }
+    /**
+     * Helper: Select agents for Layers 5-8
+     * Layer 5: API (REST, GraphQL)
+     * Layer 6: Data (Database)
+     * Layer 7: Auth (Authentication, Authorization)
+     * Layer 8: UI Components
+     */
+    selectAgentsLayer5to8(features, existingAgents) {
+        const agents = [];
+        const { hasFrontend } = features.structure;
+        const hasAgent = (id) => existingAgents.some(a => a.id === id);
+        // ===== LAYER 5: API (Conditional on features) =====
+        if (features.features.has(FEATURE_FLAGS.HAS_REST_API)) {
+            const deps = ['entities'];
+            if (hasAgent('backend-modules'))
+                deps.push('backend-modules');
+            agents.push({
+                id: 'api-rest',
+                promptId: 'api/detect-endpoints',
+                templateId: 'api/endpoint',
+                dependencies: deps,
+                parallel: true,
+                optional: false,
+                diagrams: ['sequence'],
+                outputFile: '03-api/rest.md',
+                layer: 5
+            });
+        }
+        if (features.features.has(FEATURE_FLAGS.HAS_GRAPHQL)) {
+            agents.push({
+                id: 'api-graphql',
+                promptId: 'api/detect-graphql',
+                dependencies: ['entities'],
+                parallel: true,
+                optional: false,
+                diagrams: ['classDiagram'],
+                outputFile: '03-api/graphql.md',
+                layer: 5
+            });
+        }
+        if (features.features.has(FEATURE_FLAGS.HAS_WEBSOCKET)) {
+            agents.push({
+                id: 'api-websocket',
+                promptId: 'api/detect-websocket',
+                dependencies: ['entities'],
+                parallel: true,
+                optional: true,
+                diagrams: ['sequence'],
+                outputFile: '03-api/websocket.md',
+                layer: 5
+            });
+        }
+        // ===== LAYER 6: Data (Conditional on DB features) =====
+        if (features.features.has(FEATURE_FLAGS.HAS_SQL_DB) ||
+            features.features.has(FEATURE_FLAGS.HAS_NOSQL_DB)) {
+            agents.push({
+                id: 'database',
+                promptId: 'data/detect-schema',
+                dependencies: ['entities'],
+                parallel: true,
+                optional: false,
+                diagrams: ['erd'],
+                outputFile: '04-data/database.md',
+                layer: 6
+            });
+        }
+        if (features.features.has(FEATURE_FLAGS.HAS_MIGRATIONS)) {
+            agents.push({
+                id: 'migrations',
+                promptId: 'data/detect-migrations',
+                dependencies: ['database'],
+                parallel: true,
+                optional: true,
+                diagrams: [],
+                outputFile: '04-data/migrations.md',
+                layer: 6
+            });
+        }
+        // ===== LAYER 7: Auth (Conditional on Auth features) =====
+        if (features.features.has(FEATURE_FLAGS.HAS_AUTH)) {
+            // Build dependencies based on available API agents
+            const allAgents = [...existingAgents, ...agents];
+            const authDeps = ['api-rest', 'api-graphql']
+                .filter(id => allAgents.some(a => a.id === id));
+            if (authDeps.length === 0)
+                authDeps.push('entities');
+            agents.push({
+                id: 'authentication',
+                promptId: 'auth/detect-auth',
+                templateId: 'auth/flow',
+                dependencies: authDeps,
+                parallel: true,
+                optional: false,
+                diagrams: ['sequence', 'stateDiagram'],
+                outputFile: '05-auth/authentication.md',
+                layer: 7
+            });
+            if (features.features.has(FEATURE_FLAGS.HAS_RBAC)) {
+                agents.push({
+                    id: 'authorization',
+                    promptId: 'auth/detect-authz',
+                    dependencies: ['authentication'],
+                    parallel: true,
+                    optional: false,
+                    diagrams: ['flowchart'],
+                    outputFile: '05-auth/authorization.md',
+                    layer: 7
+                });
+            }
+        }
+        // ===== LAYER 8: UI Components (Conditional on Frontend + Framework) =====
+        if (hasFrontend && (features.features.has(FEATURE_FLAGS.HAS_REACT) ||
+            features.features.has(FEATURE_FLAGS.HAS_VUE) ||
+            features.features.has(FEATURE_FLAGS.HAS_ANGULAR))) {
+            const componentDeps = hasAgent('frontend-modules')
+                ? ['frontend-modules']
+                : ['architecture'];
+            agents.push({
+                id: 'components',
+                promptId: 'ui/detect-components',
+                templateId: 'ui/component',
+                dependencies: componentDeps,
+                parallel: true,
+                optional: false,
+                diagrams: ['classDiagram', 'flowchart'],
+                outputFile: '02-modules/frontend/components.md',
+                layer: 8
+            });
+            if (features.features.has(FEATURE_FLAGS.HAS_STATE_MGMT)) {
+                agents.push({
+                    id: 'state',
+                    promptId: 'ui/analyze-state',
+                    dependencies: ['components'],
+                    parallel: true,
+                    optional: false,
+                    diagrams: ['stateDiagram', 'flowchart'],
+                    outputFile: '02-modules/frontend/state.md',
+                    layer: 8
+                });
+            }
+            if (features.features.has(FEATURE_FLAGS.HAS_ROUTING)) {
+                agents.push({
+                    id: 'routing',
+                    promptId: 'ui/analyze-routing',
+                    dependencies: ['components'],
+                    parallel: true,
+                    optional: true,
+                    diagrams: ['flowchart'],
+                    outputFile: '02-modules/frontend/routing.md',
+                    layer: 8
+                });
+            }
+        }
+        return agents;
+    }
+    /**
+     * Helper: Select agents for Layers 9-12
+     * Layer 9: Integration (External services, Dependencies)
+     * Layer 10: Ops (Deployment, CI/CD)
+     * Layer 11: Security Audit
+     * Layer 12: Summary
+     */
+    selectAgentsLayer9to12(features, existingAgents) {
+        const agents = [];
+        const allAgents = [...existingAgents];
+        const hasAgent = (id) => allAgents.some(a => a.id === id);
+        // Helper to get API agent IDs
+        const getApiAgentIds = () => allAgents
+            .filter(a => a.id.startsWith('api-'))
+            .map(a => a.id);
+        // ===== LAYER 9: Integration =====
+        const apiDeps = getApiAgentIds();
+        agents.push({
+            id: 'services',
+            promptId: 'integration/detect-services',
+            dependencies: apiDeps.length > 0 ? apiDeps : ['entities'],
+            parallel: true,
+            optional: true,
+            diagrams: ['sequence'],
+            outputFile: '06-integration/services.md',
+            layer: 9
+        });
+        agents.push({
+            id: 'dependencies',
+            promptId: 'integration/dependencies',
+            dependencies: ['bootstrap'],
+            parallel: true,
+            optional: false,
+            diagrams: ['pie'],
+            outputFile: '06-integration/dependencies.md',
+            layer: 9
+        });
+        // ===== LAYER 10: Ops (Conditional on Docker/CI) =====
+        if (features.structure.hasDocker || features.structure.hasCICD) {
+            agents.push({
+                id: 'deployment',
+                promptId: 'ops/deployment',
+                dependencies: ['architecture'],
+                parallel: true,
+                optional: true,
+                diagrams: ['flowchart', 'c4'],
+                outputFile: '07-ops/deployment.md',
+                layer: 10
+            });
+        }
+        if (features.structure.hasCICD) {
+            const cicdDeps = hasAgent('deployment') || agents.some(a => a.id === 'deployment')
+                ? ['deployment']
+                : ['architecture'];
+            agents.push({
+                id: 'cicd',
+                promptId: 'ops/cicd',
+                dependencies: cicdDeps,
+                parallel: true,
+                optional: true,
+                diagrams: ['flowchart', 'gantt'],
+                outputFile: '07-ops/ci-cd.md',
+                layer: 10
+            });
+        }
+        if (features.structure.hasDocker && features.features.has(FEATURE_FLAGS.HAS_K8S)) {
+            agents.push({
+                id: 'kubernetes',
+                promptId: 'ops/kubernetes',
+                dependencies: ['deployment'],
+                parallel: true,
+                optional: true,
+                diagrams: ['c4'],
+                outputFile: '07-ops/kubernetes.md',
+                layer: 10
+            });
+        }
+        // ===== LAYER 11: Security Audit (Conditional) =====
+        const securityDeps = ['authentication', 'api-rest', 'database']
+            .filter(id => hasAgent(id) || allAgents.some(a => a.id === id));
+        if (securityDeps.length > 0 || features.features.has(FEATURE_FLAGS.HAS_AUTH)) {
+            agents.push({
+                id: 'security',
+                promptId: 'analysis/security-audit',
+                dependencies: securityDeps.length > 0 ? securityDeps : ['entities'],
+                parallel: false,
+                optional: true,
+                diagrams: ['flowchart'],
+                outputFile: '05-auth/security.md',
+                layer: 11
+            });
+        }
+        // ===== LAYER 12: Summary (Always - Final) =====
+        agents.push({
+            id: 'summary',
+            promptId: 'analysis/summary',
+            dependencies: ['*'], // Special: depends on all previous non-optional agents
+            parallel: false,
+            optional: false,
+            diagrams: ['c4'],
+            outputFile: 'index.md',
+            layer: 12
+        });
+        // Structure builder (before write_specs)
+        agents.push({
+            id: 'structure_builder',
+            promptId: 'finalizer/structure',
+            dependencies: ['summary'],
+            parallel: false,
+            optional: false,
+            diagrams: [],
+            outputFile: '', // Creates folder structure
+            layer: 12
+        });
+        // Write specs (final)
+        agents.push({
+            id: 'write_specs',
+            promptId: 'finalizer/write',
+            dependencies: ['structure_builder'],
+            parallel: false,
+            optional: false,
+            diagrams: [],
+            outputFile: '', // Writes all spec files
+            layer: 12
+        });
+        return agents;
+    }
+    /**
+     * Build execution layers from agents
+     */
+    buildLayers(agents) {
+        // TODO: Implement in S3-T2.6
+        const layers = [];
+        const maxLayer = Math.max(...agents.map(a => a.layer), 0);
+        for (let i = 0; i <= maxLayer; i++) {
+            const layerAgents = agents.filter(a => a.layer === i);
+            if (layerAgents.length > 0) {
+                layers.push(layerAgents);
+            }
+        }
+        return layers;
+    }
+    /**
+     * Assign and override prompts for specific frameworks
+     */
+    assignPrompts(agents, features) {
+        // TODO: Implement in S3-T2.7
+        return this.resolveDependencies(agents);
+    }
+    /**
+     * Resolve special '*' dependencies to actual agent IDs
+     */
+    resolveDependencies(agents) {
+        return agents.map(agent => {
+            if (agent.dependencies.includes('*')) {
+                // Depends on all non-optional agents in previous layers
+                const previousAgents = agents
+                    .filter(a => a.layer < agent.layer && !a.optional)
+                    .map(a => a.id);
+                return { ...agent, dependencies: previousAgents };
+            }
+            return agent;
+        });
+    }
+    /**
+     * Estimate execution duration
+     */
+    estimateDuration(agents) {
+        // TODO: Implement in S3-T2.6
+        const layers = this.buildLayers(agents);
+        // ~30s per agent, parallelism reduces total time
+        let totalSeconds = 0;
+        for (const layer of layers) {
+            if (layer.length === 1) {
+                totalSeconds += 30;
+            }
+            else {
+                // Parallel agents: time = max single + overhead
+                totalSeconds += 20 + (layer.length * 5);
+            }
+        }
+        const minutes = Math.ceil(totalSeconds / 60);
+        return `~${minutes} min`;
+    }
+    /**
+     * Determine if an agent should be skipped
+     */
+    shouldSkipAgent(agent, features, completedAgents, failedAgents) {
+        // TODO: Implement in S3-T3.1
+        return { skip: false };
+    }
+    /**
+     * Validate DAG for circular dependencies and missing deps
+     */
+    validateDAG(dag) {
+        const errors = [];
+        const agentIds = new Set(dag.agents.map(a => a.id));
+        for (const agent of dag.agents) {
+            // Check dependencies exist
+            for (const dep of agent.dependencies) {
+                if (dep !== '*' && !agentIds.has(dep)) {
+                    errors.push(`Agent ${agent.id} depends on non-existent agent ${dep}`);
+                }
+            }
+            // Check no circular dependencies
+            if (agent.dependencies.includes(agent.id)) {
+                errors.push(`Agent ${agent.id} has circular dependency on itself`);
+            }
+        }
+        return { valid: errors.length === 0, errors };
+    }
+}
+//# sourceMappingURL=smart-dag-planner.js.map

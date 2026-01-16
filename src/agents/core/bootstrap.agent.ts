@@ -134,7 +134,7 @@ ${detected.map(f => `- ${f}`).join('\n') || '(none detected)'}
                     summary: `Loaded ${filesLoaded.length} key files for ${repoType} analysis`,
                     filesLoaded,
                     filesFailed,
-                    promptVersion: { id: 'bootstrap', version: '1', hash: 'native' }
+                    promptVersion: { id: 'analysis/bootstrap', version: '1', hash: 'native' }
                 },
                 message: `Bootstrap complete: loaded ${filesLoaded.length} files`
             };

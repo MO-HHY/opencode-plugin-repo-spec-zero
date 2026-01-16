@@ -69,6 +69,11 @@ export declare class SubmoduleManager {
      */
     initializeFolderStructure(specsPath: string): Promise<void>;
     /**
+     * v2.1.0: Initialize hierarchical folder structure in _generated/
+     * Creates all subdirectories defined in GENERATED_SUBDIRS
+     */
+    initializeGeneratedStructure(specsPath: string, repoType?: string): Promise<void>;
+    /**
      * Read manifest from specs folder
      */
     readManifest(specsPath: string): Promise<SpecsManifest | undefined>;
@@ -106,9 +111,10 @@ export declare class SubmoduleManager {
      */
     readExistingSpecs(specsPath: string): Promise<Map<string, string>>;
     /**
-     * Write a spec file to _generated folder
+     * Write a spec file to the _generated directory
+     * v2.1.0: Supports hierarchical paths with auto-creation of subdirectories
      */
-    writeSpec(specsPath: string, filename: string, content: string): Promise<void>;
+    writeSpec(specsPath: string, relativePath: string, content: string): Promise<void>;
     /**
      * Write index.md to specs root
      */

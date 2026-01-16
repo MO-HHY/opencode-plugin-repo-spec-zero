@@ -1,0 +1,319 @@
+{
+  "metadata": {
+    "projectSlug": "sample-fullstack-repo",
+    "repoType": "fullstack",
+    "baseDir": "/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo",
+    "analysisDate": "2026-01-16T23:30:49.350Z",
+    "durationMs": 52,
+    "agentsExecuted": [
+      "bootstrap",
+      "dependencies",
+      "overview",
+      "entities",
+      "architecture",
+      "backend-modules",
+      "frontend-modules",
+      "database",
+      "api-rest",
+      "components",
+      "summary",
+      "services",
+      "structure_builder",
+      "write_specs"
+    ],
+    "keyFilesLoaded": [
+      "package.json",
+      ".env.example",
+      "prisma/schema.prisma"
+    ],
+    "promptVersions": [
+      {
+        "id": "analysis/bootstrap",
+        "version": "1",
+        "hash": "native"
+      },
+      {
+        "id": "integration/dependencies",
+        "version": "5",
+        "hash": "3b5ffb13"
+      },
+      {
+        "id": "analysis/overview",
+        "version": "1",
+        "hash": "4f77d5b2"
+      },
+      {
+        "id": "analysis/entities",
+        "version": "1",
+        "hash": "eddb8a32"
+      },
+      {
+        "id": "analysis/architecture",
+        "version": "1",
+        "hash": "bd8a8720"
+      },
+      {
+        "id": "analysis/modules",
+        "version": "1",
+        "hash": "90592d0c"
+      },
+      {
+        "id": "analysis/modules",
+        "version": "1",
+        "hash": "90592d0c"
+      },
+      {
+        "id": "data/detect-schema",
+        "version": "1",
+        "hash": "e0f6f86b"
+      },
+      {
+        "id": "api/detect-endpoints",
+        "version": "1",
+        "hash": "a4d7ac10"
+      },
+      {
+        "id": "ui/detect-components",
+        "version": "1",
+        "hash": "24105529"
+      },
+      {
+        "id": "analysis/summary",
+        "version": "1",
+        "hash": "native"
+      },
+      {
+        "id": "integration/detect-services",
+        "version": "5",
+        "hash": "812c4221"
+      },
+      {
+        "id": "finalizer/structure",
+        "version": "1",
+        "hash": "native"
+      },
+      {
+        "id": "finalizer/write",
+        "version": "2",
+        "hash": "native"
+      }
+    ]
+  },
+  "keyFiles": {
+    "package.json": {
+      "relativePath": "package.json",
+      "content": "{\n  \"name\": \"sample-fullstack-repo\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Sample fullstack repository for E2E testing\",\n  \"main\": \"src/server/index.ts\",\n  \"scripts\": {\n    \"start\": \"ts-node src/server/index.ts\",\n    \"build\": \"next build\",\n    \"test\": \"jest\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.2\",\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"next\": \"^13.4.0\",\n    \"@prisma/client\": \"^5.0.0\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.0.0\",\n    \"prisma\": \"^5.0.0\",\n    \"jest\": \"^29.5.0\"\n  }\n}\n",
+      "truncated": false
+    },
+    ".env.example": {
+      "relativePath": ".env.example",
+      "content": "DATABASE_URL=\"postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public\"\nPORT=3000\n",
+      "truncated": false
+    },
+    "prisma/schema.prisma": {
+      "relativePath": "prisma/schema.prisma",
+      "content": "datasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\ngenerator client {\n  provider = \"prisma-client-js\"\n}\n\nmodel User {\n  id    Int     @id @default(autoincrement())\n  email String  @unique\n  name  String?\n  posts Post[]\n}\n\nmodel Post {\n  id        Int     @id @default(autoincrement())\n  title     String\n  content   String?\n  published Boolean @default(false)\n  author    User    @relation(fields: [authorId], references: [id])\n  authorId  Int\n}\n",
+      "truncated": false
+    }
+  },
+  "agentOutputs": {
+    "bootstrap": {
+      "agentId": "bootstrap",
+      "filePath": "",
+      "summary": "## Bootstrap Summary",
+      "fullContent": "## Bootstrap Summary\n\n**Repository Type:** fullstack\n**Base Directory:** /Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo\n**Files Loaded:** 3\n**Files Failed:** 0\n\n### Loaded Files\n- **package.json**: Node.js package manifest\n- **.env.example**: Environment variables template\n\n### Failed Files\n(none)\n\n### Additional Detection\n- prisma/schema.prisma",
+      "promptVersion": {
+        "id": "analysis/bootstrap",
+        "version": "1",
+        "hash": "native"
+      },
+      "timestamp": "2026-01-16T23:30:49.353Z"
+    },
+    "dependencies": {
+      "agentId": "dependencies",
+      "filePath": "06-integration/dependencies.md",
+      "summary": "# Generic Analysis\nAnalysis content for ## Repository Struct",
+      "fullContent": "# Generic Analysis\nAnalysis content for ## Repository Struct\n\n## Distribution Chart\n\n> Diagram: Generate a pie chart for distribution visualization\n",
+      "promptVersion": {
+        "id": "integration/dependencies",
+        "version": "5",
+        "hash": "3b5ffb13"
+      },
+      "diagrams": [],
+      "timestamp": "2026-01-16T23:30:49.356Z"
+    },
+    "overview": {
+      "agentId": "overview",
+      "filePath": "00-foundation/overview.md",
+      "summary": "# Executive Summary\nThis is a sample fullstack repository.",
+      "fullContent": "# Executive Summary\nThis is a sample fullstack repository.\n\n## Tech Stack\nReact, Express, Prisma.\n\n## C4 Architecture Diagram\n\n> Diagram: Generate a C4 architecture diagram\n\n\n## Flow Diagram\n\n> Diagram: Generate a flowchart showing logic and decision flows\n",
+      "promptVersion": {
+        "id": "analysis/overview",
+        "version": "1",
+        "hash": "4f77d5b2"
+      },
+      "diagrams": [],
+      "timestamp": "2026-01-16T23:30:49.356Z"
+    },
+    "entities": {
+      "agentId": "entities",
+      "filePath": "01-domain/entities.md",
+      "summary": "# {{name}}",
+      "fullContent": "# {{name}}\n\n> {{description}}\n\n## Overview\n\n| Property | Value |\n|----------|-------|\n| **Entity** | `{{name}}` |\n| **Table/Collection** | `{{tableName}}` |\n| **Location** | `{{sourceFile}}` |\n\n\n\n\n\n## Entity Relationship Diagram\n\n```mermaid\nerDiagram\n    {{name}} {\n\n    }\n\n```\n\n\n\nNo |\n{{/each}}\n{{/if}}\n\n## Usage Example\n\n```typescript\n// Create\nconst {{lowerName}} = await {{name}}.create({\n\n});\n\n// Find\nconst {{lowerName}} = await {{name}}.findById(id);\n\n// Update\nawait {{lowerName}}.update({ /* fields */ });\n\n// Delete\nawait {{lowerName}}.delete();\n```\n\n## Implementation Notes\n\n{{notes}}\n\n\n## Class Diagram\n\n> Diagram: Generate a class diagram showing type structures\n",
+      "promptVersion": {
+        "id": "analysis/entities",
+        "version": "1",
+        "hash": "eddb8a32"
+      },
+      "diagrams": [
+        {
+          "path": "_diagrams/analysis-entities-erd.mmd",
+          "content": "---\nuid: entities:diagram:erd\ntitle: \"Entity Relationship Diagram\"\ntype: diagram\ndiagram_type: erd\ncreated: 2026-01-16\nsource: 01-domain/entities.md\n---\n\n```mermaid\nerDiagram\n    {{name}} {\n\n    }\n```\n"
+        }
+      ],
+      "timestamp": "2026-01-16T23:30:49.358Z"
+    },
+    "architecture": {
+      "agentId": "architecture",
+      "filePath": "00-foundation/architecture.md",
+      "summary": "# Executive Summary\nThis is a sample fullstack repository.",
+      "fullContent": "# Executive Summary\nThis is a sample fullstack repository.\n\n## Tech Stack\nReact, Express, Prisma.\n\n## C4 Architecture Diagram\n\n> Diagram: Generate a C4 architecture diagram\n\n\n## Flow Diagram\n\n> Diagram: Generate a flowchart showing logic and decision flows\n",
+      "promptVersion": {
+        "id": "analysis/architecture",
+        "version": "1",
+        "hash": "bd8a8720"
+      },
+      "diagrams": [],
+      "timestamp": "2026-01-16T23:30:49.358Z"
+    },
+    "backend-modules": {
+      "agentId": "backend-modules",
+      "filePath": "02-modules/backend/index.md",
+      "summary": "# Endpoints\n- GET /api/users",
+      "fullContent": "# Endpoints\n- GET /api/users\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n\n## Flow Diagram\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n",
+      "promptVersion": {
+        "id": "analysis/modules",
+        "version": "1",
+        "hash": "90592d0c"
+      },
+      "diagrams": [
+        {
+          "path": "_diagrams/analysis-modules-flowchart.mmd",
+          "content": "---\nuid: backend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-16\nsource: 02-modules/backend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
+        }
+      ],
+      "timestamp": "2026-01-16T23:30:49.359Z"
+    },
+    "frontend-modules": {
+      "agentId": "frontend-modules",
+      "filePath": "02-modules/frontend/index.md",
+      "summary": "# Endpoints\n- GET /api/users",
+      "fullContent": "# Endpoints\n- GET /api/users\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n\n## Flow Diagram\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n",
+      "promptVersion": {
+        "id": "analysis/modules",
+        "version": "1",
+        "hash": "90592d0c"
+      },
+      "diagrams": [
+        {
+          "path": "_diagrams/analysis-modules-flowchart.mmd",
+          "content": "---\nuid: frontend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-16\nsource: 02-modules/frontend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
+        }
+      ],
+      "timestamp": "2026-01-16T23:30:49.359Z"
+    },
+    "database": {
+      "agentId": "database",
+      "filePath": "04-data/database.md",
+      "summary": "# Executive Summary\nThis is a sample fullstack repository.",
+      "fullContent": "# Executive Summary\nThis is a sample fullstack repository.\n\n## Tech Stack\nReact, Express, Prisma.\n\n## Entity Relationship Diagram\n\n> Diagram: Generate an ERD showing entity relationships\n",
+      "promptVersion": {
+        "id": "data/detect-schema",
+        "version": "1",
+        "hash": "e0f6f86b"
+      },
+      "diagrams": [],
+      "timestamp": "2026-01-16T23:30:49.359Z"
+    },
+    "api-rest": {
+      "agentId": "api-rest",
+      "filePath": "03-api/rest.md",
+      "summary": "# {{method}} {{path}}",
+      "fullContent": "# {{method}} {{path}}\n\n> {{description}}\n\n## Overview\n\n| Property | Value |\n|----------|-------|\n| **Method** | `{{method}}` |\n| **Path** | `{{path}}` |\n| **Auth Required** | No |\n\n\n\n\n\n\n\n\n\n## Implementation Notes\n\n> Location: `{{sourceFile}}`\n\n{{notes}}\n\n\n## Sequence Diagram\n\n> Diagram: Generate a sequence diagram showing the main interaction flows\n",
+      "promptVersion": {
+        "id": "api/detect-endpoints",
+        "version": "1",
+        "hash": "a4d7ac10"
+      },
+      "diagrams": [],
+      "timestamp": "2026-01-16T23:30:49.361Z"
+    },
+    "components": {
+      "agentId": "components",
+      "filePath": "02-modules/frontend/components.md",
+      "summary": "# {{name}}",
+      "fullContent": "# {{name}}\n\n> {{description}}\n\n## Overview\n\n| Property | Value |\n|----------|-------|\n| **Component** | `<{{name}} />` |\n| **Location** | `{{sourceFile}}` |\n| **Category** | {{category}} |\n\n\n\n\n\n\n\n## Usage\n\n```tsx\nimport { {{name}} } from '{{importPath}}';\n\nfunction Example() {\n  return (\n    <{{name}}\n      \n    />\n  );\n}\n```\n\n\n\n\n\n## Implementation Notes\n\n{{notes}}\n\n\n## Class Diagram\n\n> Diagram: Generate a class diagram showing type structures\n\n\n## Flow Diagram\n\n> Diagram: Generate a flowchart showing logic and decision flows\n",
+      "promptVersion": {
+        "id": "ui/detect-components",
+        "version": "1",
+        "hash": "24105529"
+      },
+      "diagrams": [],
+      "timestamp": "2026-01-16T23:30:49.361Z"
+    },
+    "summary": {
+      "agentId": "summary",
+      "filePath": "/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo/sample-fullstack-repo-spec/SUMMARY.md",
+      "summary": "\n# Generic Analysis\nAnalysis content for ",
+      "fullContent": "---\nuid: sample-fullstack-repo:spec:summary\ntitle: \"sample-fullstack-repo - Analysis Summary\"\nstatus: draft\nversion: 1.0.0\ncreated: 2026-01-16\nprompt_version: summary@v1\nedges:\n  - [[sample-fullstack-repo:spec:bootstrap|summarizes]]\n  - [[sample-fullstack-repo:spec:dependencies|summarizes]]\n  - [[sample-fullstack-repo:spec:overview|summarizes]]\n  - [[sample-fullstack-repo:spec:entities|summarizes]]\n  - [[sample-fullstack-repo:spec:architecture|summarizes]]\n  - [[sample-fullstack-repo:spec:backend-modules|summarizes]]\n  - [[sample-fullstack-repo:spec:frontend-modules|summarizes]]\n  - [[sample-fullstack-repo:spec:database|summarizes]]\n  - [[sample-fullstack-repo:spec:api-rest|summarizes]]\n  - [[sample-fullstack-repo:spec:components|summarizes]]\ntags:\n  - spec\n  - summary\n  - executive\n---\n\n# Generic Analysis\nAnalysis content for ",
+      "promptVersion": {
+        "id": "analysis/summary",
+        "version": "1",
+        "hash": "native"
+      },
+      "timestamp": "2026-01-16T23:30:49.362Z"
+    },
+    "services": {
+      "agentId": "services",
+      "filePath": "06-integration/services.md",
+      "summary": "# Endpoints\n- GET /api/users",
+      "fullContent": "# Endpoints\n- GET /api/users\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n\n## Sequence Diagram\n\n> Diagram: Generate a sequence diagram showing the main interaction flows\n",
+      "promptVersion": {
+        "id": "integration/detect-services",
+        "version": "5",
+        "hash": "812c4221"
+      },
+      "diagrams": [
+        {
+          "path": "_diagrams/integration-detect-services-sequence.mmd",
+          "content": "---\nuid: services:diagram:sequence\ntitle: \"Sequence Diagram\"\ntype: diagram\ndiagram_type: sequence\ncreated: 2026-01-16\nsource: 06-integration/services.md\n---\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n"
+        }
+      ],
+      "timestamp": "2026-01-16T23:30:49.363Z"
+    },
+    "structure_builder": {
+      "agentId": "structure_builder",
+      "filePath": "",
+      "summary": "{\"specsPath\":\"/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo/specs\",\"repoType\":\"fullstack\",\"structureCreated\":true,\"subdirectoriesCreated\":[],\"promptVersion\":{\"id\":\"finalizer/structure\",\"version\":\"1\",\"hash\":\"native\"}}",
+      "fullContent": "{\"specsPath\":\"/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo/specs\",\"repoType\":\"fullstack\",\"structureCreated\":true,\"subdirectoriesCreated\":[],\"promptVersion\":{\"id\":\"finalizer/structure\",\"version\":\"1\",\"hash\":\"native\"}}",
+      "promptVersion": {
+        "id": "finalizer/structure",
+        "version": "1",
+        "hash": "native"
+      },
+      "timestamp": "2026-01-16T23:30:49.363Z"
+    },
+    "write_specs": {
+      "agentId": "write_specs",
+      "filePath": "",
+      "summary": "## Write Specs Summary",
+      "fullContent": "## Write Specs Summary\n\n**Project:** sample-fullstack-repo\n**Version:** 1.0.0 (Initial Generation)\n**Files Written:** 15\n\n### Generated Files\n\n- `_generated/06-integration/dependencies.md`\n- `_generated/00-foundation/overview.md`\n- `_generated/01-domain/entities.md`\n- `_generated/00-foundation/architecture.md`\n- `_generated/02-modules/backend/index.md`\n- `_generated/02-modules/frontend/index.md`\n- `_generated/04-data/database.md`\n- `_generated/03-api/rest.md`\n- `_generated/02-modules/frontend/components.md`\n- `_generated/06-integration/services.md`\n- `_generated/_diagrams/analysis-entities-erd.mmd`\n- `_generated/_diagrams/analysis-modules-flowchart.mmd`\n- `_generated/_diagrams/analysis-modules-flowchart.mmd`\n- `_generated/_diagrams/integration-detect-services-sequence.mmd`\n- `_generated/index.md`\n\n### Next Steps\n\nThe specs have been written to the `_generated/` folder. \nThe commit-push agent will now commit and push these changes.\n\nAfter this initial generation, subsequent `analyze` runs will operate in \n**AUDIT mode**, generating only an AUDIT_REPORT.md without modifying existing specs.",
+      "promptVersion": {
+        "id": "finalizer/write",
+        "version": "2",
+        "hash": "native"
+      },
+      "timestamp": "2026-01-16T23:30:49.402Z"
+    }
+  }
+}

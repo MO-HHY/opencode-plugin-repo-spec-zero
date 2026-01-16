@@ -52,9 +52,21 @@ export const GENERATION_DAG = {
         { agentId: 'bootstrap', dependencies: ['submodule_check'] },
         // Layers 2-8: Analysis nodes
         ...ANALYSIS_NODES,
-        // Layer 9: Write specs to _generated/
-        { agentId: 'write_specs', dependencies: ['summary'] },
-        // Layer 10: Commit and push
+        // Layer 9: Structure Builder (prepares hierarchical folders)
+        {
+            agentId: 'structure_builder',
+            dependencies: ['summary'],
+            parallel: false,
+            optional: false,
+        },
+        // Layer 10: Write specs to _generated/
+        {
+            agentId: 'write_specs',
+            dependencies: ['structure_builder'],
+            parallel: false,
+            optional: false,
+        },
+        // Layer 11: Commit and push
         { agentId: 'commit_push', dependencies: ['write_specs'] }
     ]
 };

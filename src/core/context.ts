@@ -8,6 +8,8 @@
  * - Token-efficient context building
  */
 
+import type { AgentOutput as AgentOutputV2, StandaloneDiagram } from '../types.js';
+
 export interface PromptVersion {
     id: string;
     version: string;
@@ -20,6 +22,7 @@ export interface AgentOutput {
     summary: string;      // Max 500 chars for token economy
     fullContent: string;  // Full content if needed
     promptVersion: PromptVersion;
+    diagrams?: StandaloneDiagram[];
     timestamp: Date;
 }
 
@@ -136,10 +139,33 @@ export class SharedContext {
     }
 
     /**
+     * Get set of all completed prompt IDs
+     */
+    getCompletedPrompts(): Set<string> {
+        return new Set(
+            Array.from(this.agentOutputs.values())
+                .map(o => o.promptVersion.id)
+        );
+    }
+
+    /**
      * Get all executed agent IDs
      */
     getExecutedAgentIds(): string[] {
         return Array.from(this.agentOutputs.keys());
+    }
+
+    /**
+     * Get all diagrams from all agents
+     */
+    getAllDiagrams(): StandaloneDiagram[] {
+        const allDiagrams: StandaloneDiagram[] = [];
+        for (const output of this.agentOutputs.values()) {
+            if (output.diagrams && output.diagrams.length > 0) {
+                allDiagrams.push(...output.diagrams);
+            }
+        }
+        return allDiagrams;
     }
 
     /**
