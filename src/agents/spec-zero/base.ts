@@ -115,42 +115,28 @@ export abstract class RepoSpecZeroAgent extends SubAgent {
 
     private loadPrompt(repoType: string, filename: string): string {
         // Resolve plugin root directory relative to this file
-        // dist/agents/spec-zero/base.js -> ../../../ -> root
-        // src/agents/spec-zero/base.ts -> ../../../ -> root
+        // When compiled: dist/agents/spec-zero/base.js
+        // - spec-zero (1) -> agents (2) -> dist (3) -> root
+        // So we need 3 ".." to get to root, not 4!
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
-        const rootDir = path.resolve(__dirname, '../../../../');
 
-        // Note: In some build setups, dist/ might vary, so we might need robust check. 
-        // But assuming standard tsc output matching src structure:
-        // src/agents/spec-zero/base.ts -> 3 levels down from src, which is 1 level from root = 4 levels?
-        // src/agents/spec-zero/base.ts -> spec-zero(1) -> agents(2) -> src(3) -> root(4)? No.
-        // path.dirname(base.ts) = spec-zero. 
-        // spec-zero -> agents -> src -> root. That is 3 ".." jumps.
-        // Let's verify: 
-        // /root/src/agents/spec-zero/base.ts
-        // path.dirname = /root/src/agents/spec-zero
-        // resolve(.., '..') = /root/src/agents
-        // resolve(.., '../..') = /root/src
-        // resolve(.., '../../..') = /root
-
-        // However, if we are in dist/agents/spec-zero/base.js:
-        // /root/dist/agents/spec-zero/base.js
-        // Same depth.
+        // FIXED: Changed from '../../../../' to '../../../'
+        // dist/agents/spec-zero/base.js -> spec-zero -> agents -> dist -> root (3 levels)
+        const rootDir = path.resolve(__dirname, '../../../');
 
         // If prompts are in /root/prompts:
-        const promptsDir = path.join(rootDir, 'prompts'); // CONFIG.PROMPTS_DIR might be 'prompts'
+        const promptsDir = path.join(rootDir, 'prompts');
         const typePath = path.join(promptsDir, repoType, filename);
         const genericPath = path.join(promptsDir, 'generic', filename);
         const sharedPath = path.join(promptsDir, 'shared', filename);
 
+        // Debug: Log paths being checked
+        console.log(`[loadPrompt] Looking for ${filename} in:`, { rootDir, promptsDir, typePath, genericPath, sharedPath });
+
         if (fs.existsSync(typePath)) return fs.readFileSync(typePath, 'utf-8');
         if (fs.existsSync(genericPath)) return fs.readFileSync(genericPath, 'utf-8');
         if (fs.existsSync(sharedPath)) return fs.readFileSync(sharedPath, 'utf-8');
-
-        // Fallback: Check if we are in dev mode or structure is different (e.g. prompts copied to dist)
-        // Try resolving from process.cwd temporarily if the above fails, mainly for local testing if links are weird?
-        // No, we want to ABOLISH process.cwd dependency.
 
         throw new Error(`Prompt file ${filename} not found in ${promptsDir} (checked: ${typePath}, ${genericPath}, ${sharedPath})`);
     }
