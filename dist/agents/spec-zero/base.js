@@ -1,86 +1,119 @@
+/**
+ * RepoSpecZeroAgent Base Class - Context-Aware Agent
+ *
+ * Refactored to support:
+ * - SharedContext integration
+ * - Versioned prompts with PromptLoader
+ * - SPEC-OS compliant output
+ * - DAG dependency awareness
+ */
 import { SubAgent } from '../base.js';
+import { createPromptLoader } from '../../core/prompt-loader.js';
+import { getFullSystemContext } from '../../prompts/system-context.js';
+import { getFullOutputSchema, generateFrontmatter } from '../../prompts/output-schema.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 export class RepoSpecZeroAgent extends SubAgent {
     // Triggers can be generic for these agents as they are mostly orchestrated
     triggers = [];
+    // Prompt loader instance (lazy initialized)
+    _promptLoader = null;
+    /**
+     * Get or create prompt loader
+     */
+    get promptLoader() {
+        if (!this._promptLoader) {
+            const __filename = fileURLToPath(import.meta.url);
+            const __dirname = path.dirname(__filename);
+            const rootDir = path.resolve(__dirname, '../../../');
+            this._promptLoader = createPromptLoader(rootDir);
+        }
+        return this._promptLoader;
+    }
     async process(context) {
         const { client } = context;
         const params = context.params || {};
-        // DEFENSIVE: Coerce all params to strings with defaults to prevent undefined.split() errors
+        // Extract parameters with defaults
         const repoStructure = String(params.repoStructure || 'No structure available');
         const projectSlug = String(params.projectSlug || 'unknown-repo');
         const baseDir = String(params.baseDir || process.cwd());
-        // Previous results should be passed in params or accessible via context
-        // For simplicity, let's assume orchestrator passes a map of "agentId" -> "outputContent"
-        const allResults = params.allResults || {};
-        // Only fail if baseDir doesn't exist (repoStructure and projectSlug now have defaults)
+        const repoType = params.repoType || 'generic';
+        // New: SharedContext integration
+        const sharedContext = params.sharedContext;
+        const previousResults = params.previousResults || '';
+        const dependencies = params.dependencies || this.contextDeps;
+        // Validate baseDir
         if (!baseDir || !fs.existsSync(baseDir)) {
             return { success: false, message: `Invalid baseDir: ${baseDir}` };
         }
         try {
-            // 1. Resolve Prompt
-            // The prompt file path is relative to the prompts directory (e.g. "generic/hl_overview.md")
-            // But wait, the detection logic gives us the directory (e.g. "frontend").
-            // The agents are generic in class definition, but the *prompt file* might vary by repo type?
-            // The plan says: "Agent ID: overview, Prompt: hl_overview.md".
-            // And "SpecZeroDetectionSkill" returns the *type*.
-            // So the actual prompt path is `prompts/${repoType}/${this.promptFile}`.
-            // If not found, fallback to `prompts/generic/${this.promptFile}`.
-            const repoType = params.repoType || 'generic';
-            const promptContent = this.loadPrompt(repoType, this.promptFile);
-            // 2. Build Context from Deps
-            const previousContext = this.buildContext(allResults);
-            // 3. Execute Analysis (using AnalyzeContextSkill)
-            // We need to access the skill instance. In BaseAgent, we have `skills` map.
-            // We assume 'repo_spec_zero_analyze_context' is registered or we use the class directly if we had dependency injection.
-            // Since we are inside the plugin, we can rely on the `skills` map populated by `registerSkill`.
-            // However, `BaseAgent` structure in `base.ts` has `protected skills: Map<string, SkillExecutor>`.
-            // Let's use that.
-            // 3. Execute Analysis (using NativeLLMSkill)
+            // 1. Load versioned prompt
+            const { content: promptContent, metadata: promptMetadata } = this.loadVersionedPrompt(repoType);
+            // 2. Build context from SharedContext or fallback to params
+            const analysisContext = this.buildAnalysisContext({
+                sharedContext,
+                previousResults,
+                repoStructure,
+                dependencies,
+                allResults: params.allResults || {}
+            });
+            // 3. Build system context
+            const systemContext = getFullSystemContext({
+                projectSlug,
+                repoType,
+                analysisDate: new Date().toISOString().split('T')[0]
+            });
+            // 4. Build output schema
+            const outputSchema = getFullOutputSchema({
+                projectSlug,
+                sectionName: this.getSectionName(),
+                promptId: promptMetadata.id,
+                promptVersion: promptMetadata.version
+            });
+            // 5. Compose full prompt
+            const fullSystemPrompt = systemContext + outputSchema + '\n---\n\n' + promptContent;
+            const userPrompt = this.buildUserPrompt(analysisContext, repoStructure);
+            // 6. Execute via Native LLM
             const nativeLLM = this.skills.get('native_llm');
             if (!nativeLLM) {
                 return { success: false, message: 'Native LLM skill not found' };
             }
-            // Prepare combined user prompt (Context + Tree)
-            // Defensive: Ensure repoStructure is a string
-            const safeRepoStructure = String(repoStructure || 'No structure available');
-            let userPrompt = `Repository Structure:\n${safeRepoStructure}\n`;
-            if (previousContext) {
-                userPrompt += `\nPrevious Analysis Context:\n${previousContext}\n`;
-            }
-            // Execute via SkillExecutor interface
             const analysisResultRaw = await nativeLLM.execute({
-                systemPrompt: promptContent,
+                systemPrompt: fullSystemPrompt,
                 userPrompt: userPrompt
             });
             if (!analysisResultRaw.success || !analysisResultRaw.data) {
                 throw new Error(analysisResultRaw.error || "Empty response from Native LLM");
             }
-            const analysisResult = analysisResultRaw.data;
-            // 4. Write Output
-            const writerExecutor = this.skills.get('repo_spec_zero_write_output');
-            // Actually, OutputWriterSkill has `writeAnalysisFile`, but the wrapper tool `repo_spec_zero_write_output` might just do the structure.
-            // We might need to call the skill directly or have a tool for writing specific files.
-            // Let's assume we can use the `OutputWriterSkill` directly or we bind a tool for it.
-            // For now, let's just use `fs` directly here or assume the orchestrator handles writing? 
-            // The plan says: "WRITE: OutputWriterSkill.createStructure...". 
-            // But the agent base class says: "await ctx.writeOutput(this.outputFile, result);"
-            // Let's implement writing logic here using `OutputWriterSkill` logic (re-instantiated or passed).
-            // Better: let's assume the orchestrator will write it, or we do it here. 
-            // To keep agents autonomous, they should write their own output.
-            // I'll add a helper to write the file.
+            let analysisResult = analysisResultRaw.data;
+            // 7. Ensure frontmatter exists
+            analysisResult = this.ensureFrontmatter(analysisResult, {
+                projectSlug,
+                sectionName: this.getSectionName(),
+                promptMetadata,
+                dependencies
+            });
+            // 8. Extract summary for context (token economy)
+            const summary = this.extractSummary(analysisResult);
+            // 9. Write output file
             const specDir = path.join(baseDir, `${projectSlug}-spec`);
             const fullPath = path.join(specDir, 'analysis', this.category, this.outputFile);
-            // Ensure dir exists (OutputWriterSkill.createStructure should have done it, but just in case)
             fs.mkdirSync(path.dirname(fullPath), { recursive: true });
             fs.writeFileSync(fullPath, analysisResult);
+            // 10. Return result with prompt version for tracking
+            const promptVersion = {
+                id: promptMetadata.id,
+                version: promptMetadata.version,
+                hash: promptMetadata.hash
+            };
             return {
                 success: true,
                 data: {
                     output: analysisResult,
-                    path: fullPath
+                    path: fullPath,
+                    summary,
+                    promptVersion
                 },
                 message: `Completed analysis for ${this.id}`
             };
@@ -89,32 +122,60 @@ export class RepoSpecZeroAgent extends SubAgent {
             return { success: false, message: `Agent ${this.id} failed: ${error.message}` };
         }
     }
-    loadPrompt(repoType, filename) {
-        // Resolve plugin root directory relative to this file
-        // When compiled: dist/agents/spec-zero/base.js
-        // - spec-zero (1) -> agents (2) -> dist (3) -> root
-        // So we need 3 ".." to get to root, not 4!
+    /**
+     * Load prompt with version tracking
+     */
+    loadVersionedPrompt(repoType) {
+        try {
+            return this.promptLoader.load(this.promptFile.replace('.md', ''), repoType);
+        }
+        catch (error) {
+            // Fallback to legacy loading
+            return {
+                content: this.loadPromptLegacy(repoType, this.promptFile),
+                metadata: {
+                    id: this.promptFile.replace('.md', ''),
+                    version: '1',
+                    hash: 'legacy',
+                    lastModified: new Date().toISOString(),
+                    sourcePath: 'legacy'
+                }
+            };
+        }
+    }
+    /**
+     * Legacy prompt loading (for backwards compatibility)
+     */
+    loadPromptLegacy(repoType, filename) {
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
-        // FIXED: Changed from '../../../../' to '../../../'
-        // dist/agents/spec-zero/base.js -> spec-zero -> agents -> dist -> root (3 levels)
         const rootDir = path.resolve(__dirname, '../../../');
-        // If prompts are in /root/prompts:
         const promptsDir = path.join(rootDir, 'prompts');
         const typePath = path.join(promptsDir, repoType, filename);
         const genericPath = path.join(promptsDir, 'generic', filename);
         const sharedPath = path.join(promptsDir, 'shared', filename);
-        // Debug: Log paths being checked
-        console.log(`[loadPrompt] Looking for ${filename} in:`, { rootDir, promptsDir, typePath, genericPath, sharedPath });
         if (fs.existsSync(typePath))
             return fs.readFileSync(typePath, 'utf-8');
         if (fs.existsSync(genericPath))
             return fs.readFileSync(genericPath, 'utf-8');
         if (fs.existsSync(sharedPath))
             return fs.readFileSync(sharedPath, 'utf-8');
-        throw new Error(`Prompt file ${filename} not found in ${promptsDir} (checked: ${typePath}, ${genericPath}, ${sharedPath})`);
+        throw new Error(`Prompt file ${filename} not found in ${promptsDir}`);
     }
-    buildContext(allResults) {
+    /**
+     * Build analysis context from SharedContext or fallback
+     */
+    buildAnalysisContext(options) {
+        const { sharedContext, previousResults, dependencies, allResults } = options;
+        // Prefer SharedContext if available
+        if (sharedContext) {
+            return sharedContext.buildAgentContext(dependencies);
+        }
+        // Fallback to previousResults or allResults
+        if (previousResults) {
+            return previousResults;
+        }
+        // Build from allResults (legacy)
         let context = "";
         for (const depId of this.contextDeps) {
             if (allResults[depId]) {
@@ -122,6 +183,68 @@ export class RepoSpecZeroAgent extends SubAgent {
             }
         }
         return context;
+    }
+    /**
+     * Build user prompt with context
+     */
+    buildUserPrompt(context, repoStructure) {
+        let userPrompt = '';
+        if (context) {
+            userPrompt += `## Analysis Context\n\n${context}\n\n`;
+        }
+        userPrompt += `## Repository Structure\n\n\`\`\`\n${repoStructure}\n\`\`\`\n`;
+        return userPrompt;
+    }
+    /**
+     * Ensure output has valid SPEC-OS frontmatter
+     */
+    ensureFrontmatter(content, options) {
+        // Check if frontmatter exists
+        if (content.startsWith('---')) {
+            return content;
+        }
+        // Generate frontmatter
+        const { projectSlug, sectionName, promptMetadata, dependencies } = options;
+        const today = new Date().toISOString().split('T')[0];
+        const frontmatter = {
+            uid: `${projectSlug}:spec:${sectionName}`,
+            title: this.getTitleFromContent(content) || this.name,
+            status: 'draft',
+            version: '1.0.0',
+            created: today,
+            prompt_version: `${promptMetadata.id}@v${promptMetadata.version}`,
+            edges: dependencies.map(d => `[[${projectSlug}:spec:${d}|depends_on]]`),
+            tags: ['spec', sectionName, this.category]
+        };
+        const frontmatterStr = generateFrontmatter(frontmatter);
+        return `${frontmatterStr}\n\n${content}`;
+    }
+    /**
+     * Extract title from content (first H1 or H2)
+     */
+    getTitleFromContent(content) {
+        const match = content.match(/^#+\s+(.+)$/m);
+        return match ? match[1].trim() : null;
+    }
+    /**
+     * Get section name from agent ID
+     */
+    getSectionName() {
+        return this.id.replace('_', '-');
+    }
+    /**
+     * Extract summary for token economy (max 500 chars)
+     */
+    extractSummary(content, maxLength = 500) {
+        // Try to find Executive Summary section
+        const summaryMatch = content.match(/## Executive Summary\n([\s\S]*?)(?=\n##|$)/);
+        if (summaryMatch) {
+            return summaryMatch[1].trim().slice(0, maxLength);
+        }
+        // Fallback: first paragraph after frontmatter
+        const withoutFrontmatter = content.replace(/^---[\s\S]*?---\n?/, '');
+        const firstParagraph = withoutFrontmatter.split('\n\n')[0];
+        return (firstParagraph || content.slice(0, maxLength)).trim().slice(0, maxLength);
     }
 }
 //# sourceMappingURL=base.js.map

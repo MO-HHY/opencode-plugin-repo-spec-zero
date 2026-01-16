@@ -1,5 +1,27 @@
-version=4
-You are an expert software architect and code analyzer. Your task is to analyze a given codebase (which will be provided to you) and identify all its external dependencies.
+version=5
+## Repository Analysis Context
+
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: Service Dependencies
+
+You are an expert software architect and code analyzer. Your task is to analyze this codebase and identify all its external dependencies.
 
 Definition of an External Dependency: An "external dependency" in this context refers to any service (internal or external), library, or resource that is not part of the codebase itself but is required for the codebase to function correctly during runtime. These dependencies typically reside outside the immediate project's source code and are often managed via package managers, API calls, or configuration.
 
@@ -57,16 +79,41 @@ Format the output clearly using markdown
 
 ---
 
-## Repository Structure and Files
+## 3rd-Party Dependencies (Raw List)
 
-{repo_structure}
+**Instruction**: Analyze only the dependencies listed below. Do not include or assume any dependency not present in this list.
 
-## Raw Dependencies from requirement.stxt, package.json etc
-
------------
-
+-------- LIST START ---------
 {repo_deps}
+-------- LIST END ---------
 
------------
+---
 
+## Output Requirements
 
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:service_dep"
+title: "Service Dependencies"
+status: draft
+version: 1
+created: {date}
+prompt_version: 5
+---
+```
+
+**Citation Rules:**
+- Always cite integration file paths with line numbers
+- Use `NOT_FOUND` if integration point cannot be located
+- Mark assumptions with `[ASSUMPTION]`
+
+**Cross-References:**
+- Events connecting to services: [[{project}:spec:event|connects]]
+- APIs calling services: [[{project}:spec:api|calls]]
+- Monitoring for services: [[{project}:spec:monitor|monitors]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Focus on runtime dependencies, not dev tools
+- Document all external service integrations

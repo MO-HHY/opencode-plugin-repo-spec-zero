@@ -1,6 +1,27 @@
-version=1
+version=2
+## Repository Analysis Context
 
-You are a software architect who is an experts with feature flag systems , CI-CD and things related to them. Analyze all feature flag implementations and usage in this codebase.
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: Feature Flags
+
+You are a software architect who is an expert with feature flag systems, CI-CD and things related to them. Analyze all feature flag implementations and usage in this codebase.
 
 **Special Instruction**: If no feature flag systems are found, return "no feature flag usage detected". Only document feature flag systems that are ACTUALLY implemented in the codebase. Do NOT list feature flag platforms or tools that are not present.
 
@@ -83,9 +104,49 @@ Format the output clearly using markdown
 
 ---
 
-## Repository Structure and Files
+## Output Requirements
 
-{repo_structure}
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:flag"
+title: "Feature Flags"
+status: draft
+version: 1
+created: {date}
+prompt_version: 2
+---
+```
+
+**Special Instruction:** If no feature flags are found, return:
+```yaml
+---
+uid: "{project}:spec:flag"
+title: "Feature Flags"
+status: not_applicable
+version: 1
+created: {date}
+prompt_version: 2
+---
+
+## No Feature Flags Detected
+
+This codebase does not contain feature flag implementations.
+```
+
+**Citation Rules:**
+- Always cite flag usage file paths with line numbers
+- Use `NOT_FOUND` if implementation cannot be located
+
+**Cross-References:**
+- APIs gated by flags: [[{project}:spec:api|gates]]
+- Modules using flags: [[{project}:spec:module|toggles]]
+- Deployment using flags: [[{project}:spec:deployment|controls]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Document all flag definitions and usages
+- Note any stale or unused flags
 
 ---
 

@@ -1,66 +1,124 @@
 # DAG Definition - Agent Dependency Graph
 
-**Versione:** 1.0
+**Versione:** 1.0.0
 **Data:** 2026-01-16
+**Updated:** With SharedContext integration
 
 ---
 
 ## Visual Representation
 
 ```
-                                    ┌───────────────┐
-                                    │   BOOTSTRAP   │ Layer 0
-                                    │  (key files)  │
-                                    └───────┬───────┘
-                                            │
-                                            ▼
-                                    ┌───────────────┐
-                                    │   OVERVIEW    │ Layer 1
-                                    │  (structure)  │
-                                    └───────┬───────┘
-                                            │
-                        ┌───────────────────┼───────────────────┐
-                        │                   │                   │
-                        ▼                   ▼                   ▼
-                ┌───────────┐       ┌───────────┐       ┌───────────┐
-                │  MODULE   │       │  ENTITY   │       │ (parallel)│ Layer 2
-                └─────┬─────┘       └─────┬─────┘       └───────────┘
-                      │                   │
-        ┌─────────────┼───────────────────┼─────────────┐
-        │             │                   │             │
-        ▼             ▼                   ▼             ▼
-┌───────────┐ ┌───────────┐       ┌───────────┐ ┌───────────┐
-│    DB     │ │ DATA_MAP  │       │   EVENT   │ │ DEPENDENCY│ Layer 3
-└─────┬─────┘ └─────┬─────┘       └─────┬─────┘ └─────┬─────┘
-      │             │                   │             │
-      └──────┬──────┴───────────────────┘             │
-             │                                        │
-             ▼                                        │
-     ┌───────────────┐                               │
-     │      API      │◄──────────────────────────────┘ Layer 4
-     └───────┬───────┘
-             │
-    ┌────────┼────────┬────────────┐
-    │        │        │            │
-    ▼        ▼        ▼            ▼
-┌──────┐ ┌──────┐ ┌────────┐ ┌───────────┐
-│ AUTH │ │AUTHZ │ │SECURITY│ │PROMPT_SEC │ Layer 5
-└──┬───┘ └──┬───┘ └────┬───┘ └─────┬─────┘
-   │        │          │           │
-   │        │          │           │
-   ▼        ▼          ▼           ▼
-┌──────┐ ┌──────┐ ┌────────┐ ┌───────────┐
-│DEPLOY│ │MONITOR│ │  ML   │ │   FLAG    │ Layer 6
-└──┬───┘ └──┬───┘ └────┬───┘ └─────┬─────┘
-   │        │          │           │
-   └────────┴──────────┴───────────┘
+                                ┌─────────────────────────────────────┐
+                                │         SHARED CONTEXT              │
+                                │  ┌─────────────────────────────┐    │
+                                │  │ keyFiles: Map<path, content>│    │
+                                │  │ agentOutputs: Map<id, out>  │    │
+                                │  │ promptVersions: []          │    │
+                                │  └─────────────────────────────┘    │
+                                └──────────────────┬──────────────────┘
+                                                   │
+                              ┌────────────────────┴────────────────────┐
+                              │            LAYER 0: BOOTSTRAP           │
+                              │                                         │
+                              │  ┌──────────────┐                       │
+                              │  │  BOOTSTRAP   │ ← Reads key files     │
+                              │  │  (no deps)   │   into SharedContext  │
+                              │  └──────┬───────┘                       │
+                              └─────────┼───────────────────────────────┘
+                                        │
+                              ┌─────────┴───────────────────────────────┐
+                              │            LAYER 1: OVERVIEW            │
+                              │                                         │
+                              │  ┌──────────────┐                       │
+                              │  │   OVERVIEW   │ ← High-level analysis │
+                              │  │              │   Writes to context   │
+                              │  └──────┬───────┘                       │
+                              └─────────┼───────────────────────────────┘
+                                        │
+                    ┌───────────────────┴───────────────────┐
+                    │                                       │
+          ┌─────────┴─────────────────────────────┐  ┌──────┴──────┐
+          │          LAYER 2: CORE               │  │             │
+          │                                       │  │             │
+          │  ┌──────────┐      ┌──────────┐      │  │             │
+          │  │  MODULE  │      │  ENTITY  │      │  │             │
+          │  │          │      │          │      │  │             │
+          │  └────┬─────┘      └────┬─────┘      │  │             │
+          └───────┼────────────────┼─────────────┘  │             │
+                  │                │                │             │
+      ┌───────────┴────────────────┴───────────────┐│             │
+      │           LAYER 3: DATA                    ││             │
+      │                                            ││             │
+      │  ┌────────┐   ┌──────────┐   ┌────────┐   ││             │
+      │  │   DB   │   │ DATA_MAP │   │ EVENT  │   ││             │
+      │  └───┬────┘   └────┬─────┘   └───┬────┘   ││             │
+      └──────┼─────────────┼─────────────┼────────┘│             │
+             │             │             │         │             │
+   ┌─────────┴─────────────┴─────────────┴────────┐│             │
+   │           LAYER 4: INTEGRATION              ││             │
+   │                                              ││             │
+   │  ┌────────┐   ┌────────────┐   ┌───────────┐││             │
+   │  │  API   │   │ DEPENDENCY │   │SERVICE_DEP│││             │
+   │  └───┬────┘   └─────┬──────┘   └─────┬─────┘││             │
+   └──────┼──────────────┼────────────────┼──────┘│             │
+          │              │                │       │             │
+  ┌───────┴──────────────┴────────────────┴──────┐│             │
+  │           LAYER 5: SECURITY                  ││             │
+  │                                              ││             │
+  │  ┌──────┐  ┌───────┐  ┌──────────┐  ┌──────┐ ││             │
+  │  │ AUTH │  │ AUTHZ │  │ SECURITY │  │PROMPT││ │             │
+  │  │      │→ │       │  │          │  │ SEC  ││ │             │
+  │  └──┬───┘  └───┬───┘  └────┬─────┘  └──┬───┘ ││             │
+  └─────┼──────────┼───────────┼───────────┼─────┘│             │
+        │          │           │           │      │             │
+  ┌─────┴──────────┴───────────┴───────────┴─────┐│             │
+  │           LAYER 6: OPS                       ││             │
+  │                                              ││             │
+  │  ┌──────────┐  ┌─────────┐  ┌────┐  ┌──────┐ ││             │
+  │  │DEPLOYMENT│  │ MONITOR │  │ ML │  │ FLAG │ ││             │
+  │  └────┬─────┘  └────┬────┘  └──┬─┘  └──┬───┘ ││             │
+  └───────┼─────────────┼──────────┼───────┼─────┘│             │
+          │             │          │       │      │             │
+          └─────────────┴──────────┴───────┴──────┘             │
+                               │                                │
+                    ┌──────────┴────────────────────────────────┘
                     │
-                    ▼
-            ┌───────────────┐
-            │   SUMMARY     │ Layer 7
-            │  (finalizer)  │
-            └───────────────┘
+          ┌─────────┴─────────────────────────────┐
+          │          LAYER 7: FINALIZER           │
+          │                                       │
+          │  ┌──────────────────────────────┐     │
+          │  │          SUMMARY             │     │
+          │  │  (depends on ALL previous)   │     │
+          │  └──────────────────────────────┘     │
+          └───────────────────────────────────────┘
 ```
+
+---
+
+## Agent Definitions
+
+| Agent ID | Layer | Dependencies | Parallel | Optional | Output File |
+|----------|-------|--------------|----------|----------|-------------|
+| bootstrap | 0 | - | No | No | (context only) |
+| overview | 1 | bootstrap | No | No | overview.md |
+| module | 2 | overview | Yes | No | modules.md |
+| entity | 2 | overview | Yes | No | entities.md |
+| db | 3 | module, entity | Yes | No | database.md |
+| data_map | 3 | module, entity | Yes | No | data-mapping.md |
+| event | 3 | module, entity | Yes | No | events.md |
+| api | 4 | db, entity | Yes | No | apis.md |
+| dependency | 4 | module | Yes | No | dependencies.md |
+| service_dep | 4 | api | Yes | No | service-dependencies.md |
+| auth | 5 | api | Yes | No | authentication.md |
+| authz | 5 | auth | Yes | No | authorization.md |
+| security | 5 | api, db | Yes | No | security.md |
+| prompt_sec | 5 | api | Yes | Yes | prompt-security.md |
+| deployment | 6 | module, dependency | Yes | No | deployment.md |
+| monitor | 6 | api, db | Yes | No | monitoring.md |
+| ml | 6 | api, data_map | Yes | Yes | ml-services.md |
+| flag | 6 | module | Yes | Yes | feature-flags.md |
+| summary | 7 | * (all) | No | No | SUMMARY.md |
 
 ---
 
@@ -261,4 +319,35 @@ Some agents can be skipped based on repo type:
 
 ---
 
-*DAG Definition v1.0*
+## Customization
+
+### Adding a New Agent
+
+1. Create agent in `src/agents/spec-zero/{category}/{name}.agent.ts`
+2. Add node to `DEFAULT_DAG` in `dag-executor.ts`
+3. Register agent in `index.ts`
+
+### Skipping Agents
+
+Use `createCustomDAG()` to create a subset:
+
+```typescript
+import { createCustomDAG, DEFAULT_DAG } from './core/dag-executor.js';
+
+// Only run core analysis
+const coreOnlyDAG = createCustomDAG([
+    'bootstrap', 'overview', 'module', 'entity', 'summary'
+], DEFAULT_DAG);
+```
+
+### Conditional Execution
+
+Set `optional: true` on agents that can be skipped:
+
+```typescript
+{ agentId: 'ml', dependencies: ['api'], parallel: true, optional: true }
+```
+
+---
+
+*DAG Definition v1.0.0 - Updated 2026-01-16*

@@ -1,4 +1,26 @@
-version=12
+version=13
+## Repository Analysis Context
+
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: Monitoring & Observability
+
 You are a monitoring and observability expert. Analyze all monitoring, logging, metrics, tracing, and alerting mechanisms in this codebase.
 
 **Critical Instructions**:
@@ -695,9 +717,49 @@ Format the output clearly using markdown
 
 ---
 
-## Repository Structure and Files
+## Output Requirements
 
-{repo_structure}
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:monitor"
+title: "Monitoring & Observability"
+status: draft
+version: 1
+created: {date}
+prompt_version: 13
+---
+```
+
+**Special Instruction:** If no monitoring mechanisms are found, return:
+```yaml
+---
+uid: "{project}:spec:monitor"
+title: "Monitoring & Observability"
+status: not_applicable
+version: 1
+created: {date}
+prompt_version: 13
+---
+
+## No Monitoring Detected
+
+This codebase does not contain monitoring, logging, or observability implementations.
+```
+
+**Citation Rules:**
+- Always cite monitoring file paths with line numbers
+- Use `NOT_FOUND` if implementation cannot be located
+
+**Cross-References:**
+- Services being monitored: [[{project}:spec:service_dep|monitors]]
+- APIs with metrics: [[{project}:spec:api|tracks]]
+- Events being logged: [[{project}:spec:event|logs]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Focus on production monitoring code
+- Include raw dependencies section for verification
 
 ---
 

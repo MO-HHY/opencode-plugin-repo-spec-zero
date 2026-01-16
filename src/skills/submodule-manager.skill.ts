@@ -1,0 +1,835 @@
+/**
+ * SubmoduleManager Skill
+ * 
+ * Handles all Git submodule operations for the specs repository.
+ * Core skill for v2.0.0 submodule-based spec management.
+ * 
+ * Responsibilities:
+ * - Check if submodule exists
+ * - Create and initialize submodule
+ * - Read/write manifest and config
+ * - Read existing specs for audit comparison
+ * - Archive audit reports
+ * - Commit and push operations
+ */
+
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
+import {
+    SubmoduleConfig,
+    SubmoduleState,
+    SpecsManifest,
+    SpecZeroMode,
+    PluginConfig,
+    DEFAULT_PLUGIN_CONFIG,
+    SPECS_FOLDER_STRUCTURE,
+    GENERATED_SPEC_FILES,
+    ProjectInfo,
+    AnalysisEntry,
+    AuditEntry,
+    SemVer,
+    VersionBumpType,
+} from '../types.js';
+
+const execAsync = promisify(exec);
+
+export interface Logger {
+    info: (msg: string) => void;
+    error: (msg: string) => void;
+    warn?: (msg: string) => void;
+    debug?: (msg: string) => void;
+}
+
+export interface SubmoduleManagerOptions {
+    /** Skip interactive prompts */
+    nonInteractive?: boolean;
+    /** Skip push operations */
+    noPush?: boolean;
+    /** GitHub CLI available */
+    hasGhCli?: boolean;
+}
+
+export class SubmoduleManager {
+    private logger: Logger;
+    private options: SubmoduleManagerOptions;
+
+    constructor(logger: Logger, options: SubmoduleManagerOptions = {}) {
+        this.logger = logger;
+        this.options = {
+            nonInteractive: false,
+            noPush: false,
+            hasGhCli: false,
+            ...options,
+        };
+    }
+
+    // =========================================================================
+    // STATE DETECTION
+    // =========================================================================
+
+    /**
+     * Get the current state of the specs submodule
+     */
+    async getSubmoduleState(repoPath: string, specsFolder = 'specs'): Promise<SubmoduleState> {
+        const specsPath = path.join(repoPath, specsFolder);
+        
+        // Check if submodule entry exists in .gitmodules
+        const exists = await this.submoduleExists(repoPath, specsFolder);
+        
+        if (!exists) {
+            return {
+                exists: false,
+                initialized: false,
+                specsPath,
+                mode: 'generation',
+            };
+        }
+
+        // Check if submodule is initialized
+        const initialized = await this.isSubmoduleInitialized(repoPath, specsFolder);
+        
+        if (!initialized) {
+            return {
+                exists: true,
+                initialized: false,
+                specsPath,
+                mode: 'generation',
+            };
+        }
+
+        // Read submodule config
+        const config = await this.getSubmoduleConfig(repoPath, specsFolder);
+        
+        // Try to read manifest
+        const manifestPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.MANIFEST);
+        const manifest = await this.readManifest(specsPath);
+        
+        // Detect mode based on manifest
+        const mode = this.detectMode(manifest);
+        
+        // If audit mode, load existing specs
+        let existingSpecs: Map<string, string> | undefined;
+        if (mode === 'audit') {
+            existingSpecs = await this.readExistingSpecs(specsPath);
+        }
+
+        return {
+            exists: true,
+            initialized: true,
+            config,
+            manifest,
+            specsPath,
+            mode,
+            existingSpecs,
+        };
+    }
+
+    /**
+     * Detect operation mode from manifest state
+     */
+    private detectMode(manifest: SpecsManifest | undefined): SpecZeroMode {
+        if (!manifest) {
+            return 'generation';
+        }
+        
+        if (manifest.analyses.length === 0) {
+            return 'generation';
+        }
+        
+        return 'audit';
+    }
+
+    /**
+     * Check if submodule exists in .gitmodules
+     */
+    async submoduleExists(repoPath: string, specsFolder: string): Promise<boolean> {
+        const gitmodulesPath = path.join(repoPath, '.gitmodules');
+        
+        if (!fs.existsSync(gitmodulesPath)) {
+            return false;
+        }
+        
+        try {
+            const { stdout } = await execAsync(
+                `git config --file .gitmodules --get-regexp path`,
+                { cwd: repoPath }
+            );
+            return stdout.includes(specsFolder);
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Check if submodule is initialized and checked out
+     */
+    async isSubmoduleInitialized(repoPath: string, specsFolder: string): Promise<boolean> {
+        const specsPath = path.join(repoPath, specsFolder);
+        const gitPath = path.join(specsPath, '.git');
+        
+        // Either .git file (submodule link) or .git directory exists
+        return fs.existsSync(gitPath);
+    }
+
+    /**
+     * Get submodule configuration from .gitmodules
+     */
+    async getSubmoduleConfig(repoPath: string, specsFolder: string): Promise<SubmoduleConfig | undefined> {
+        try {
+            const { stdout: urlOutput } = await execAsync(
+                `git config --file .gitmodules --get submodule.${specsFolder}.url`,
+                { cwd: repoPath }
+            );
+            
+            const { stdout: branchOutput } = await execAsync(
+                `git config --file .gitmodules --get submodule.${specsFolder}.branch || echo "main"`,
+                { cwd: repoPath }
+            );
+            
+            return {
+                path: specsFolder,
+                remoteUrl: urlOutput.trim(),
+                branch: branchOutput.trim() || 'main',
+            };
+        } catch {
+            return undefined;
+        }
+    }
+
+    // =========================================================================
+    // SUBMODULE CREATION
+    // =========================================================================
+
+    /**
+     * Create a new specs repository on GitHub
+     * Requires `gh` CLI to be installed and authenticated
+     */
+    async createSpecsRepo(
+        projectName: string,
+        githubOwner: string,
+        isPrivate = true
+    ): Promise<string> {
+        const repoName = `${projectName}-specs`;
+        const visibility = isPrivate ? '--private' : '--public';
+        
+        this.logger.info(`Creating GitHub repository: ${githubOwner}/${repoName}`);
+        
+        try {
+            const { stdout } = await execAsync(
+                `gh repo create ${githubOwner}/${repoName} ${visibility} --description "Specifications for ${projectName}" --clone=false`
+            );
+            
+            this.logger.info(`Created repository: ${githubOwner}/${repoName}`);
+            return `git@github.com:${githubOwner}/${repoName}.git`;
+        } catch (error: any) {
+            // Check if repo already exists
+            if (error.message?.includes('already exists')) {
+                this.logger.info(`Repository already exists: ${githubOwner}/${repoName}`);
+                return `git@github.com:${githubOwner}/${repoName}.git`;
+            }
+            throw new Error(`Failed to create specs repository: ${error.message}`);
+        }
+    }
+
+    /**
+     * Add submodule to parent repository
+     */
+    async addSubmodule(
+        repoPath: string,
+        remoteUrl: string,
+        specsFolder = 'specs',
+        branch = 'main'
+    ): Promise<void> {
+        this.logger.info(`Adding submodule at ${specsFolder}`);
+        
+        try {
+            await execAsync(
+                `git submodule add -b ${branch} ${remoteUrl} ${specsFolder}`,
+                { cwd: repoPath }
+            );
+            
+            this.logger.info('Submodule added successfully');
+        } catch (error: any) {
+            throw new Error(`Failed to add submodule: ${error.message}`);
+        }
+    }
+
+    /**
+     * Initialize submodule if not already initialized
+     */
+    async initSubmodule(repoPath: string, specsFolder = 'specs'): Promise<void> {
+        this.logger.info(`Initializing submodule at ${specsFolder}`);
+        
+        try {
+            await execAsync(
+                `git submodule update --init --recursive ${specsFolder}`,
+                { cwd: repoPath }
+            );
+            
+            this.logger.info('Submodule initialized successfully');
+        } catch (error: any) {
+            throw new Error(`Failed to initialize submodule: ${error.message}`);
+        }
+    }
+
+    /**
+     * Initialize the folder structure within specs submodule
+     */
+    async initializeFolderStructure(specsPath: string): Promise<void> {
+        this.logger.info('Initializing specs folder structure');
+        
+        // Create directories
+        const dirs = [
+            SPECS_FOLDER_STRUCTURE.META,
+            SPECS_FOLDER_STRUCTURE.GENERATED,
+            SPECS_FOLDER_STRUCTURE.AUDITS,
+            SPECS_FOLDER_STRUCTURE.DOMAINS,
+        ];
+        
+        for (const dir of dirs) {
+            const fullPath = path.join(specsPath, dir);
+            if (!fs.existsSync(fullPath)) {
+                fs.mkdirSync(fullPath, { recursive: true });
+            }
+        }
+        
+        // Create .gitkeep in domains (manual folder)
+        const gitkeepPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.DOMAINS, '.gitkeep');
+        if (!fs.existsSync(gitkeepPath)) {
+            fs.writeFileSync(gitkeepPath, '');
+        }
+        
+        this.logger.info('Folder structure created');
+    }
+
+    // =========================================================================
+    // MANIFEST OPERATIONS
+    // =========================================================================
+
+    /**
+     * Read manifest from specs folder
+     */
+    async readManifest(specsPath: string): Promise<SpecsManifest | undefined> {
+        const manifestPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.MANIFEST);
+        
+        if (!fs.existsSync(manifestPath)) {
+            return undefined;
+        }
+        
+        try {
+            const content = fs.readFileSync(manifestPath, 'utf-8');
+            return JSON.parse(content) as SpecsManifest;
+        } catch (error) {
+            this.logger.error(`Failed to read manifest: ${error}`);
+            return undefined;
+        }
+    }
+
+    /**
+     * Write manifest to specs folder
+     */
+    async writeManifest(specsPath: string, manifest: SpecsManifest): Promise<void> {
+        const manifestPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.MANIFEST);
+        
+        // Ensure .meta directory exists
+        const metaDir = path.join(specsPath, SPECS_FOLDER_STRUCTURE.META);
+        if (!fs.existsSync(metaDir)) {
+            fs.mkdirSync(metaDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+        this.logger.info('Manifest written successfully');
+    }
+
+    /**
+     * Create initial manifest for new specs repo
+     */
+    createInitialManifest(
+        projectName: string,
+        repoUrl: string,
+        specsRepoUrl: string,
+        pluginVersion: string
+    ): SpecsManifest {
+        return {
+            schema_version: '2.0',
+            project: {
+                name: projectName,
+                repo_url: repoUrl,
+                specs_repo_url: specsRepoUrl,
+                created: new Date().toISOString(),
+            },
+            current_version: '0.0.0', // Will be 1.0.0 after first generation
+            mode: 'generation',
+            pending_audit: false,
+            analyses: [],
+            audits: [],
+        };
+    }
+
+    /**
+     * Add an analysis entry to manifest
+     */
+    addAnalysisEntry(manifest: SpecsManifest, entry: AnalysisEntry): SpecsManifest {
+        return {
+            ...manifest,
+            current_version: entry.version,
+            mode: 'audit', // After first analysis, mode becomes audit
+            analyses: [...manifest.analyses, entry],
+        };
+    }
+
+    /**
+     * Add an audit entry to manifest
+     */
+    addAuditEntry(manifest: SpecsManifest, entry: AuditEntry): SpecsManifest {
+        return {
+            ...manifest,
+            pending_audit: entry.status === 'pending',
+            audits: [...manifest.audits, entry],
+        };
+    }
+
+    /**
+     * Update audit entry status
+     */
+    updateAuditStatus(
+        manifest: SpecsManifest,
+        auditDate: string,
+        status: 'applied' | 'dismissed',
+        appliedAsVersion?: string,
+        archivedTo?: string
+    ): SpecsManifest {
+        const updatedAudits = manifest.audits.map(audit => {
+            if (audit.date === auditDate) {
+                return {
+                    ...audit,
+                    status,
+                    applied_as_version: appliedAsVersion,
+                    archived_to: archivedTo,
+                };
+            }
+            return audit;
+        });
+        
+        return {
+            ...manifest,
+            pending_audit: false,
+            audits: updatedAudits,
+        };
+    }
+
+    // =========================================================================
+    // CONFIG OPERATIONS
+    // =========================================================================
+
+    /**
+     * Read plugin config from specs folder
+     */
+    async readConfig(specsPath: string): Promise<PluginConfig> {
+        const configPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.CONFIG);
+        
+        if (!fs.existsSync(configPath)) {
+            return { ...DEFAULT_PLUGIN_CONFIG };
+        }
+        
+        try {
+            const content = fs.readFileSync(configPath, 'utf-8');
+            const parsed = JSON.parse(content) as Partial<PluginConfig>;
+            return { ...DEFAULT_PLUGIN_CONFIG, ...parsed };
+        } catch (error) {
+            this.logger.error(`Failed to read config: ${error}`);
+            return { ...DEFAULT_PLUGIN_CONFIG };
+        }
+    }
+
+    /**
+     * Write plugin config to specs folder
+     */
+    async writeConfig(specsPath: string, config: PluginConfig): Promise<void> {
+        const configPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.CONFIG);
+        
+        // Ensure .meta directory exists
+        const metaDir = path.join(specsPath, SPECS_FOLDER_STRUCTURE.META);
+        if (!fs.existsSync(metaDir)) {
+            fs.mkdirSync(metaDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        this.logger.info('Config written successfully');
+    }
+
+    // =========================================================================
+    // SPECS FILE OPERATIONS
+    // =========================================================================
+
+    /**
+     * Read all existing specs from _generated folder
+     * Returns a Map of filename -> content
+     */
+    async readExistingSpecs(specsPath: string): Promise<Map<string, string>> {
+        const generatedPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.GENERATED);
+        const specs = new Map<string, string>();
+        
+        if (!fs.existsSync(generatedPath)) {
+            return specs;
+        }
+        
+        const files = fs.readdirSync(generatedPath);
+        
+        for (const file of files) {
+            if (file.endsWith('.md')) {
+                const filePath = path.join(generatedPath, file);
+                const content = fs.readFileSync(filePath, 'utf-8');
+                specs.set(file, content);
+            }
+        }
+        
+        this.logger.info(`Loaded ${specs.size} existing spec files`);
+        return specs;
+    }
+
+    /**
+     * Write a spec file to _generated folder
+     */
+    async writeSpec(specsPath: string, filename: string, content: string): Promise<void> {
+        const generatedPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.GENERATED);
+        
+        if (!fs.existsSync(generatedPath)) {
+            fs.mkdirSync(generatedPath, { recursive: true });
+        }
+        
+        const filePath = path.join(generatedPath, filename);
+        fs.writeFileSync(filePath, content);
+    }
+
+    /**
+     * Write index.md to specs root
+     */
+    async writeIndex(specsPath: string, content: string): Promise<void> {
+        const indexPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.INDEX);
+        fs.writeFileSync(indexPath, content);
+    }
+
+    /**
+     * Read index.md from specs root
+     */
+    async readIndex(specsPath: string): Promise<string | undefined> {
+        const indexPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.INDEX);
+        
+        if (!fs.existsSync(indexPath)) {
+            return undefined;
+        }
+        
+        return fs.readFileSync(indexPath, 'utf-8');
+    }
+
+    // =========================================================================
+    // AUDIT OPERATIONS
+    // =========================================================================
+
+    /**
+     * Check if there's a pending audit report
+     */
+    async hasPendingAudit(specsPath: string): Promise<boolean> {
+        const auditPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.AUDIT_REPORT);
+        return fs.existsSync(auditPath);
+    }
+
+    /**
+     * Write audit report
+     */
+    async writeAuditReport(specsPath: string, content: string): Promise<void> {
+        const auditPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.AUDIT_REPORT);
+        fs.writeFileSync(auditPath, content);
+        this.logger.info('Audit report written');
+    }
+
+    /**
+     * Read audit report
+     */
+    async readAuditReport(specsPath: string): Promise<string | undefined> {
+        const auditPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.AUDIT_REPORT);
+        
+        if (!fs.existsSync(auditPath)) {
+            return undefined;
+        }
+        
+        return fs.readFileSync(auditPath, 'utf-8');
+    }
+
+    /**
+     * Archive current audit report to _audits folder
+     * Returns the archived file path (relative to specs)
+     */
+    async archiveAuditReport(specsPath: string, version: string): Promise<string> {
+        const auditPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.AUDIT_REPORT);
+        
+        if (!fs.existsSync(auditPath)) {
+            throw new Error('No audit report to archive');
+        }
+        
+        // Create archive filename with date and version
+        const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const archiveFilename = `${date}_v${version}_audit.md`;
+        const archivePath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.AUDITS, archiveFilename);
+        
+        // Ensure _audits directory exists
+        const auditsDir = path.join(specsPath, SPECS_FOLDER_STRUCTURE.AUDITS);
+        if (!fs.existsSync(auditsDir)) {
+            fs.mkdirSync(auditsDir, { recursive: true });
+        }
+        
+        // Move the file
+        const content = fs.readFileSync(auditPath, 'utf-8');
+        fs.writeFileSync(archivePath, content);
+        fs.unlinkSync(auditPath);
+        
+        this.logger.info(`Archived audit report to ${archiveFilename}`);
+        
+        return path.join(SPECS_FOLDER_STRUCTURE.AUDITS, archiveFilename);
+    }
+
+    // =========================================================================
+    // GIT OPERATIONS
+    // =========================================================================
+
+    /**
+     * Get current commit SHA
+     */
+    async getCommitSha(repoPath: string): Promise<string> {
+        try {
+            const { stdout } = await execAsync('git rev-parse HEAD', { cwd: repoPath });
+            return stdout.trim();
+        } catch {
+            return 'unknown';
+        }
+    }
+
+    /**
+     * Get current branch name
+     */
+    async getBranch(repoPath: string): Promise<string> {
+        try {
+            const { stdout } = await execAsync('git rev-parse --abbrev-ref HEAD', { cwd: repoPath });
+            return stdout.trim();
+        } catch {
+            return 'main';
+        }
+    }
+
+    /**
+     * Get remote URL for origin
+     */
+    async getRemoteUrl(repoPath: string): Promise<string> {
+        try {
+            const { stdout } = await execAsync('git remote get-url origin', { cwd: repoPath });
+            return stdout.trim();
+        } catch {
+            return '';
+        }
+    }
+
+    /**
+     * Stage all changes in a directory
+     */
+    async stageAll(repoPath: string): Promise<void> {
+        await execAsync('git add -A', { cwd: repoPath });
+    }
+
+    /**
+     * Commit changes
+     */
+    async commit(repoPath: string, message: string): Promise<string> {
+        try {
+            await execAsync(`git commit -m "${message}"`, { cwd: repoPath });
+            return await this.getCommitSha(repoPath);
+        } catch (error: any) {
+            if (error.message?.includes('nothing to commit')) {
+                this.logger.info('Nothing to commit');
+                return await this.getCommitSha(repoPath);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Push to remote
+     */
+    async push(repoPath: string, branch = 'main'): Promise<void> {
+        if (this.options.noPush) {
+            this.logger.info('Push skipped (noPush option)');
+            return;
+        }
+        
+        try {
+            await execAsync(`git push origin ${branch}`, { cwd: repoPath });
+            this.logger.info('Pushed to remote');
+        } catch (error: any) {
+            this.logger.error(`Push failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Check if there are uncommitted changes
+     */
+    async hasUncommittedChanges(repoPath: string): Promise<boolean> {
+        try {
+            const { stdout } = await execAsync('git status --porcelain', { cwd: repoPath });
+            return stdout.trim().length > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Commit in submodule and update parent reference
+     */
+    async commitSubmoduleAndUpdateParent(
+        parentRepoPath: string,
+        specsFolder: string,
+        submoduleMessage: string,
+        parentMessage: string
+    ): Promise<{ submoduleSha: string; parentSha: string }> {
+        const specsPath = path.join(parentRepoPath, specsFolder);
+        
+        // Stage and commit in submodule
+        await this.stageAll(specsPath);
+        const submoduleSha = await this.commit(specsPath, submoduleMessage);
+        
+        // Push submodule
+        await this.push(specsPath);
+        
+        // Update parent's submodule reference
+        await execAsync(`git add ${specsFolder}`, { cwd: parentRepoPath });
+        const parentSha = await this.commit(parentRepoPath, parentMessage);
+        
+        // Push parent
+        await this.push(parentRepoPath);
+        
+        return { submoduleSha, parentSha };
+    }
+
+    // =========================================================================
+    // VERSION UTILITIES
+    // =========================================================================
+
+    /**
+     * Parse SemVer string
+     */
+    parseSemVer(version: string): SemVer {
+        const parts = version.split('.').map(Number);
+        return {
+            major: parts[0] || 0,
+            minor: parts[1] || 0,
+            patch: parts[2] || 0,
+        };
+    }
+
+    /**
+     * Format SemVer to string
+     */
+    formatSemVer(version: SemVer): string {
+        return `${version.major}.${version.minor}.${version.patch}`;
+    }
+
+    /**
+     * Calculate next version based on changes
+     */
+    calculateNextVersion(
+        currentVersion: string,
+        bumpType: VersionBumpType
+    ): string {
+        const current = this.parseSemVer(currentVersion);
+        
+        switch (bumpType) {
+            case 'major':
+                return this.formatSemVer({
+                    major: current.major + 1,
+                    minor: 0,
+                    patch: 0,
+                });
+            case 'minor':
+                return this.formatSemVer({
+                    major: current.major,
+                    minor: current.minor + 1,
+                    patch: 0,
+                });
+            case 'patch':
+                return this.formatSemVer({
+                    major: current.major,
+                    minor: current.minor,
+                    patch: current.patch + 1,
+                });
+        }
+    }
+
+    /**
+     * Determine bump type based on changes
+     */
+    determineBumpType(added: number, removed: number, modified: number): VersionBumpType {
+        // Breaking changes (removed items) = major
+        if (removed > 0) {
+            return 'minor'; // Conservative: use minor for removals in specs
+        }
+        
+        // New items = minor
+        if (added > 0) {
+            return 'minor';
+        }
+        
+        // Only modifications = patch
+        return 'patch';
+    }
+
+    // =========================================================================
+    // UTILITY METHODS
+    // =========================================================================
+
+    /**
+     * Check if gh CLI is available
+     */
+    async checkGhCli(): Promise<boolean> {
+        try {
+            await execAsync('gh --version');
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Extract project name from repo URL or path
+     */
+    extractProjectName(repoPathOrUrl: string): string {
+        // Handle Git URLs
+        const urlMatch = repoPathOrUrl.match(/\/([^\/]+?)(\.git)?$/);
+        if (urlMatch) {
+            return urlMatch[1];
+        }
+        
+        // Handle local path
+        return path.basename(repoPathOrUrl);
+    }
+
+    /**
+     * Extract GitHub owner from repo URL
+     */
+    extractGithubOwner(repoUrl: string): string | undefined {
+        // Handle SSH URL: git@github.com:owner/repo.git
+        const sshMatch = repoUrl.match(/github\.com[:/]([^\/]+)\//);
+        if (sshMatch) {
+            return sshMatch[1];
+        }
+        
+        // Handle HTTPS URL: https://github.com/owner/repo.git
+        const httpsMatch = repoUrl.match(/github\.com\/([^\/]+)\//);
+        if (httpsMatch) {
+            return httpsMatch[1];
+        }
+        
+        return undefined;
+    }
+}

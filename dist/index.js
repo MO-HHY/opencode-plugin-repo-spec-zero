@@ -1,12 +1,26 @@
 import { z } from 'zod';
+// Core Infrastructure (NEW)
+export { SharedContext } from './core/context.js';
+export { PromptLoader, createPromptLoader } from './core/prompt-loader.js';
+export { DAGExecutor, DEFAULT_DAG, GENERATION_DAG, AUDIT_DAG, selectDAG, createCustomDAG } from './core/dag-executor.js';
+export { OutputValidator, validateOutput, validateAndFix } from './core/output-validator.js';
+// v2.0.0: Commands
+export { analyzeCommand, applyCommand, parseAnalyzeArgs, parseApplyArgs } from './commands/index.js';
+// v2.0.0: Skills
+export { SubmoduleManager } from './skills/submodule-manager.skill.js';
+// Prompts (NEW)
+export { getSystemContext, getFullSystemContext, getSummarySystemContext } from './prompts/system-context.js';
+export { getOutputSchema, getFullOutputSchema, generateFrontmatter, parseFrontmatter } from './prompts/output-schema.js';
 // Skills
 import { SpecZeroDetectionSkill } from './skills/spec-zero-detection.skill.js';
 import { NativeLLMSkill } from './skills/native-llm.skill.js';
 import { BuildRepoTreeSkill } from './skills/build-repo-tree.skill.js';
 import { GitSkill } from './skills/git.skill.js';
+import { ReadRepoFileSkill } from './skills/read-repo-file.skill.js';
 // Agents
 import { RepoSpecZeroOrchestrator } from './agents/core/orchestrator.agent.js';
 import { TaskSpecAgent } from './agents/core/task-spec.agent.js';
+import { BootstrapAgent } from './agents/core/bootstrap.agent.js';
 // SpecZero Agents
 import { OverviewAgent } from './agents/spec-zero/core/overview.agent.js';
 import { ModuleAgent } from './agents/spec-zero/core/module.agent.js';
@@ -25,6 +39,13 @@ import { DeploymentAgent } from './agents/spec-zero/ops/deployment.agent.js';
 import { MonitorAgent } from './agents/spec-zero/ops/monitor.agent.js';
 import { MlAgent } from './agents/spec-zero/ops/ml.agent.js';
 import { FlagAgent } from './agents/spec-zero/ops/flag.agent.js';
+import { SummaryAgent } from './agents/spec-zero/finalizer/summary.agent.js';
+// v2.0.0: New Finalizer Agents
+import { SubmoduleCheckAgent } from './agents/core/submodule-check.agent.js';
+import { WriteSpecsAgent } from './agents/spec-zero/finalizer/write-specs.agent.js';
+import { AuditReportAgent } from './agents/spec-zero/finalizer/audit-report.agent.js';
+import { ApplyChangesAgent } from './agents/spec-zero/finalizer/apply-changes.agent.js';
+import { CommitPushAgent } from './agents/spec-zero/finalizer/commit-push.agent.js';
 /**
  * Helper to convert agent result to string for OpenCode tool response.
  * OpenCode tools MUST return Promise<string>, not objects.
@@ -59,12 +80,13 @@ function resultToString(result) {
     }
     return String(result);
 }
-const plugin = async (input) => {
+const RepoSpecZeroPlugin = async (input) => {
     const { client } = input;
-    console.log('RepoSpecZero Plugin Initializing...');
+    console.log('RepoSpecZero Plugin v2.0.1 Initializing with DAG execution...');
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
     const nativeLLMSkill = new NativeLLMSkill(client);
+    const readRepoFileSkill = new ReadRepoFileSkill();
     // Writer Skill Executor (Mock for internal writes, but orchestrated via Node fs usually)
     const writerSkillExecutor = {
         execute: async (params) => {
@@ -86,12 +108,22 @@ const plugin = async (input) => {
             }
         }
     };
+    const readFileSkillExecutor = {
+        execute: async (params) => {
+            return readRepoFileSkill.execute(params);
+        }
+    };
     const gitSkill = new GitSkill(console);
     // 2. Initialize Agents
     const taskSpecAgent = new TaskSpecAgent();
     const orchestrator = new RepoSpecZeroOrchestrator(detectionSkill, gitSkill, taskSpecAgent);
-    // 3. Register SpecZero Agents as Sub-Agents
+    // 3. Register SpecZero Agents as Sub-Agents (including new Bootstrap and Summary)
     const specAgents = [
+        // v2.0.0: Layer 0 - Submodule management
+        new SubmoduleCheckAgent(),
+        // Layer 1: Bootstrap
+        new BootstrapAgent(), // Layer 1
+        // Layers 2-8: Analysis agents
         new OverviewAgent(),
         new ModuleAgent(),
         new EntityAgent(),
@@ -108,11 +140,18 @@ const plugin = async (input) => {
         new DeploymentAgent(),
         new MonitorAgent(),
         new MlAgent(),
-        new FlagAgent()
+        new FlagAgent(),
+        new SummaryAgent(), // Layer 8 (Summary)
+        // v2.0.0: Layer 9-10 - Finalizers
+        new WriteSpecsAgent(), // Generation mode
+        new AuditReportAgent(), // Audit mode
+        new CommitPushAgent(), // Both modes
+        new ApplyChangesAgent(), // Apply command (not in DAG)
     ];
     specAgents.forEach(agent => {
         agent.registerSkill('native_llm', nativeLLMSkill);
         agent.registerSkill('repo_spec_zero_write_output', writerSkillExecutor);
+        agent.registerSkill('repo_spec_zero_read_file', readFileSkillExecutor);
         orchestrator.registerSubAgent(agent);
     });
     // Also register skills to orchestrator
@@ -183,7 +222,7 @@ const plugin = async (input) => {
         tool: {
             // Main entry point
             'repo_spec_zero_analyze': {
-                description: 'Analyze a repository to generate Spec Zero documentation. Pass repoUrl for remote repos (will be cloned to targetDir) or repoPath for local repos.',
+                description: 'Analyze a repository to generate Spec Zero documentation.',
                 args: {
                     repoUrl: z.string().describe('The Git URL of the repository to analyze (will be cloned).').optional(),
                     repoPath: z.string().describe('Absolute path to a local repository (use this OR repoUrl, not both).').optional(),
@@ -234,8 +273,8 @@ const plugin = async (input) => {
                 try {
                     await client.tui.showToast({
                         body: {
-                            title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin v0.3.0 is ready.',
+                            title: 'RepoSpecZero v2.0.0',
+                            message: 'Spec-Zero Plugin with submodule-based specs is ready.',
                             variant: 'info',
                             duration: 3000,
                         },
@@ -248,5 +287,10 @@ const plugin = async (input) => {
         },
     };
 };
-export default plugin;
+// Default export for ESM
+export default RepoSpecZeroPlugin;
+// Named export (OpenCode uses named exports)
+export { RepoSpecZeroPlugin };
+// Alias for backward compatibility
+export const plugin = RepoSpecZeroPlugin;
 //# sourceMappingURL=index.js.map

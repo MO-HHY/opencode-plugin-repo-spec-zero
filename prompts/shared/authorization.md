@@ -1,4 +1,26 @@
-version=1
+version=2
+## Repository Analysis Context
+
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: Authorization & Access Control
+
 You are a security architect specializing in authorization. Analyze all authorization mechanisms, access control, and permission systems in this codebase.
 
 **Special Instruction**: If no authorization mechanisms are found, return "no authorization mechanisms detected". Only document authorization systems that are ACTUALLY implemented in the codebase. Do NOT list authorization methods, frameworks, or tools that are not present.
@@ -257,6 +279,30 @@ Format the output clearly using markdown
 
 ---
 
-## Repository Structure and Files
+## Output Requirements
 
-{repo_structure}
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:authz"
+title: "Authorization & Access Control"
+status: draft
+version: 1
+created: {date}
+prompt_version: 2
+---
+```
+
+**Citation Rules:**
+- Always cite authorization file paths with line numbers
+- Use `NOT_FOUND` if mechanism cannot be located
+
+**Cross-References:**
+- Authentication feeding authorization: [[{project}:spec:auth|authenticates]]
+- APIs protected by authorization: [[{project}:spec:api|protects]]
+- Entities with access control: [[{project}:spec:entity|controls]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Focus on production authorization code
+- Highlight any security gaps found

@@ -1,4 +1,26 @@
-version=1
+version=2
+## Repository Analysis Context
+
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: Data Mapping & Privacy
+
 You are a data privacy and compliance expert tasked with creating a comprehensive data mapping analysis. Analyze how data, especially personal information, flows through this system from collection to storage, processing, and sharing.
 
 **Special Instruction**: Focus on identifying personal data, sensitive information, and compliance-relevant data flows. If no data processing is found, return "no data processing detected". Only document data processing mechanisms that are ACTUALLY implemented in the codebase. Do NOT list data protection tools, compliance frameworks, or privacy technologies that are not present.
@@ -254,6 +276,30 @@ Format the output clearly using markdown, creating a comprehensive data map that
 
 ---
 
-## Repository Structure and Files
+## Output Requirements
 
-{repo_structure}
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:data_map"
+title: "Data Mapping & Privacy"
+status: draft
+version: 1
+created: {date}
+prompt_version: 2
+---
+```
+
+**Citation Rules:**
+- Always cite file paths with line numbers: `src/services/user.service.ts:45`
+- Use `NOT_FOUND` if data flow source cannot be located
+
+**Cross-References:**
+- Entities containing PII: [[{project}:spec:entity|contains]]
+- APIs exposing data: [[{project}:spec:api|exposes]]
+- Database storing data: [[{project}:spec:db|stores]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Focus on production data flows
+- Highlight any compliance gaps found

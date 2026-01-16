@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.1",
+  "last_updated": "2026-01-16",
+  "prompts": {
+    "shared": {
+      "hl_overview": { "version": "3", "description": "High-level overview analysis" },
+      "module_deep_dive": { "version": "2", "description": "Module deep dive with dependency graph" },
+      "core_entities": { "version": "2", "description": "Core domain entities with ER diagrams" },
+      "db": { "version": "2", "description": "Database schema analysis" },
+      "data_mapping": { "version": "2", "description": "Data flow and privacy mapping" },
+      "events": { "version": "2", "description": "Event-driven architecture with flow diagrams" },
+      "apis": { "version": "2", "description": "API endpoints with request/response schemas" },
+      "dependencies": { "version": "5", "description": "Dependency and architecture analysis" },
+      "service_dependencies": { "version": "5", "description": "Service-to-service dependencies" },
+      "authentication": { "version": "2", "description": "Authentication mechanisms" },
+      "authorization": { "version": "2", "description": "Authorization and RBAC/ABAC analysis" },
+      "security_check": { "version": "2", "description": "General security analysis" },
+      "prompt_security_check": { "version": "2", "description": "Prompt injection security" },
+      "deployment": { "version": "2", "description": "Deployment analysis" },
+      "monitoring": { "version": "13", "description": "Comprehensive observability analysis" },
+      "ml_services": { "version": "4", "description": "ML/AI services and integrations" },
+      "feature_flags": { "version": "2", "description": "Feature flag systems and usage" },
+      "system-context": { "version": "1", "description": "System context prompt" },
+      "output-schema": { "version": "1", "description": "SPEC-OS output schema" }
+    },
+    "frontend": {
+      "components": { "version": "1", "description": "Component analysis" },
+      "state_and_data": { "version": "1", "description": "State management analysis" }
+    },
+    "backend": {
+      "data_layer": { "version": "1", "description": "Data layer analysis" },
+      "events_and_messaging": { "version": "1", "description": "Events and messaging" }
+    },
+    "mobile": {
+      "ui_and_navigation": { "version": "1", "description": "UI and navigation" },
+      "data_and_persistence": { "version": "1", "description": "Data persistence" },
+      "api_and_network": { "version": "1", "description": "API and network" },
+      "device_features": { "version": "1", "description": "Device features" }
+    },
+    "libraries": {
+      "api_surface": { "version": "1", "description": "Public API surface" },
+      "internals": { "version": "1", "description": "Internal implementation" }
+    },
+    "infra-as-code": {
+      "resources": { "version": "1", "description": "Infrastructure resources" },
+      "environments": { "version": "1", "description": "Environment configurations" }
+    }
+  },
+  "changelog": [
+    {
+      "date": "2026-01-16",
+      "version": "1.1.0",
+      "changes": [
+        "MAJOR: All prompts now include {previous_context}, {key_files}, {repo_structure} placeholders",
+        "MAJOR: All prompts require YAML frontmatter with uid, title, status, prompt_version",
+        "MAJOR: All prompts include cross-reference syntax [[project:spec:section|edge_type]]",
+        "Upgraded core_entities.md from 16 to ~170 lines with ER diagrams",
+        "Upgraded module_deep_dive.md with dependency graphs and health assessment",
+        "Upgraded apis.md with comprehensive request/response documentation",
+        "Upgraded events.md with sequence diagrams and retry policies",
+        "Added output requirements to data_mapping, service_dependencies, authorization",
+        "Updated monitoring.md to v13 with context placeholders",
+        "Updated ml_services.md to v4 with context placeholders",
+        "Updated feature_flags.md to v2 with context placeholders",
+        "Updated dependencies.md to v5 with context placeholders"
+      ]
+    },
+    {
+      "date": "2026-01-16",
+      "version": "1.0.0",
+      "changes": [
+        "Added version tracking system",
+        "Created initial version registry",
+        "All shared prompts set to v2+ for DAG context support"
+      ]
+    }
+  ]
+}

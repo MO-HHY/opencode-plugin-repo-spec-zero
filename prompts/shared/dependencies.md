@@ -1,8 +1,29 @@
-version=4
+version=5
+## Repository Analysis Context
+
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: Dependencies & Architecture
 
 # Dependency and Architecture Analysis
 
-Act as a software dependency and architecture analyst. Your primary goal is to analyze a given software project to identify its key dependencies and modular components accurately, based solely on the provided data. Avoid making assumptions or including information not explicitly supported by the input.
+Act as a software dependency and architecture analyst. Your primary goal is to analyze this software project to identify its key dependencies and modular components accurately, based solely on the provided data. Avoid making assumptions or including information not explicitly supported by the input.
 
 ## Objectives
 
@@ -36,14 +57,6 @@ Follow these steps to ensure a thorough and accurate analysis:
 
 ## Contextual Data
 
-{previous_context}
-
----
-
-## Repository Structure and Files
-
-{repo_structure}
-
 ---
 
 ## 3rd-Party Dependencies (Raw List)
@@ -54,3 +67,33 @@ Follow these steps to ensure a thorough and accurate analysis:
 -------- LIST START ---------
 {repo_deps}
 -------- LIST END ---------
+
+---
+
+## Output Requirements
+
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:dependency"
+title: "Dependencies & Architecture"
+status: draft
+version: 1
+created: {date}
+prompt_version: 5
+---
+```
+
+**Citation Rules:**
+- Always cite dependency source files with line numbers
+- Use `NOT_FOUND` if source cannot be located
+
+**Cross-References:**
+- Modules using dependencies: [[{project}:spec:module|uses]]
+- Services depending on libraries: [[{project}:spec:service_dep|requires]]
+- Security of dependencies: [[{project}:spec:security|audits]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Only document dependencies actually present in the list
+- Mark inferred purposes with `[inferred]`

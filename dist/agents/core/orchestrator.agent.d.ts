@@ -9,7 +9,7 @@ export declare class RepoSpecZeroOrchestrator extends BaseAgent {
     private taskSpecAgent;
     readonly id = "orchestrator";
     readonly name = "RepoSpecZero Orchestrator";
-    readonly description = "Coordinates the RepoSpecZero analysis swarm.";
+    readonly description = "Coordinates the RepoSpecZero analysis swarm using DAG execution.";
     readonly systemPrompt = "You are the orchestrator of the SpecZero swarm.";
     readonly triggers: RegExp[];
     constructor(detectionSkill: SpecZeroDetectionSkill, gitSkill: GitSkill, taskSpecAgent: TaskSpecAgent);

@@ -1,4 +1,26 @@
-version=3
+version=4
+## Repository Analysis Context
+
+{previous_context}
+
+---
+
+## Key Files Content
+
+{key_files}
+
+---
+
+## Repository Structure
+
+```
+{repo_structure}
+```
+
+---
+
+## Analysis Task: ML & AI Services
+
 # 3rd Party ML Services and Technologies Analysis
 
 You are a machine learning and AI systems analyst. Analyze this codebase to identify and document all 3rd party machine learning services, AI technologies, and ML-related integrations.
@@ -83,6 +105,52 @@ Conclude with:
 - **Major Dependencies**: Most critical ML dependencies
 - **Architecture Pattern**: Overall ML architecture approach (API-first, self-hosted, hybrid)
 - **Risk Assessment:** Key risks and dependencies on external ML services
+
+---
+
+## Output Requirements
+
+**YAML Frontmatter** (required at start of output):
+```yaml
+---
+uid: "{project}:spec:ml"
+title: "ML & AI Services"
+status: draft
+version: 1
+created: {date}
+prompt_version: 4
+---
+```
+
+**Special Instruction:** If no ML services are found, return:
+```yaml
+---
+uid: "{project}:spec:ml"
+title: "ML & AI Services"
+status: not_applicable
+version: 1
+created: {date}
+prompt_version: 4
+---
+
+## No ML/AI Services Detected
+
+This codebase does not contain machine learning or AI service integrations.
+```
+
+**Citation Rules:**
+- Always cite ML integration file paths with line numbers
+- Use `NOT_FOUND` if implementation cannot be located
+
+**Cross-References:**
+- APIs serving ML predictions: [[{project}:spec:api|serves]]
+- Data flowing to ML services: [[{project}:spec:data_map|feeds]]
+- Service dependencies for ML: [[{project}:spec:service_dep|requires]]
+
+**Special Instructions:**
+- Ignore files under 'arch-docs' folder
+- Focus on production ML code
+- Document all external AI API integrations
 
 ---
 
