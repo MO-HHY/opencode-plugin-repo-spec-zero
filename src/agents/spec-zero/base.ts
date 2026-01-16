@@ -61,7 +61,9 @@ export abstract class RepoSpecZeroAgent extends SubAgent {
             }
 
             // Prepare combined user prompt (Context + Tree)
-            let userPrompt = `Repository Structure:\n${repoStructure}\n`;
+            // Defensive: Ensure repoStructure is a string
+            const safeRepoStructure = String(repoStructure || 'No structure available');
+            let userPrompt = `Repository Structure:\n${safeRepoStructure}\n`;
             if (previousContext) {
                 userPrompt += `\nPrevious Analysis Context:\n${previousContext}\n`;
             }
