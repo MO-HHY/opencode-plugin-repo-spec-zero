@@ -19,16 +19,19 @@ export abstract class RepoSpecZeroAgent extends SubAgent {
     async process(context: AgentContext): Promise<AgentResult> {
         const { client } = context;
         const params = context.params || {};
-        const repoStructure = params.repoStructure as string;
-        const projectSlug = params.projectSlug as string;
-        const baseDir = params.baseDir as string;
+
+        // DEFENSIVE: Coerce all params to strings with defaults to prevent undefined.split() errors
+        const repoStructure = String(params.repoStructure || 'No structure available');
+        const projectSlug = String(params.projectSlug || 'unknown-repo');
+        const baseDir = String(params.baseDir || process.cwd());
 
         // Previous results should be passed in params or accessible via context
         // For simplicity, let's assume orchestrator passes a map of "agentId" -> "outputContent"
         const allResults = params.allResults as Record<string, string> || {};
 
-        if (!repoStructure || !projectSlug || !baseDir) {
-            return { success: false, message: 'Missing required params: repoStructure, projectSlug, baseDir' };
+        // Only fail if baseDir doesn't exist (repoStructure and projectSlug now have defaults)
+        if (!baseDir || !fs.existsSync(baseDir)) {
+            return { success: false, message: `Invalid baseDir: ${baseDir}` };
         }
 
         try {

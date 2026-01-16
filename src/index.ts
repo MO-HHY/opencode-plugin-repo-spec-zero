@@ -111,16 +111,19 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                 contextData: z.string().describe('JSON string of previous agent results if needed.').optional()
             },
             execute: async (params: any): Promise<any> => {
+                // DEFENSIVE: Ensure all string params have defaults to prevent undefined.split() errors
+                const safeParams = {
+                    ...params,
+                    baseDir: String(params.baseDir || process.cwd()),
+                    projectSlug: String(params.projectSlug || 'unknown-manual-run'),
+                    repoStructure: String(params.repoStructure || 'No structure provided - agent called directly'),
+                    repoType: String(params.repoType || 'generic'),
+                    allResults: params.contextData ? JSON.parse(params.contextData) : {}
+                };
+
                 const context = {
                     client,
-                    params: {
-                        ...params,
-                        // Default to cwd/temp if basic params missing? 
-                        // Agents rely on baseDir/projectSlug to write.
-                        // If not provided, we might fail or default.
-                        baseDir: params.baseDir || process.cwd(),
-                        projectSlug: params.projectSlug || 'unknown-manual-run'
-                    },
+                    params: safeParams,
                     messages: [],
                     intent: { name: agent.id, confidence: 1.0 }
                 };
@@ -208,7 +211,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     await client.tui.showToast({
                         body: {
                             title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin v0.1.9 is ready.',
+                            message: 'Repo Spec Zero Plugin v0.1.10 is ready.',
                             variant: 'info',
                             duration: 3000,
                         },
