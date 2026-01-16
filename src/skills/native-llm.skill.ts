@@ -3,8 +3,15 @@ import type { SkillExecutor, SkillResult } from '../agents/base.js';
 
 type Client = PluginInput['client'];
 
+/**
+ * NativeLLMSkill - Uses OpenCode's session.prompt() API to interact with LLM
+ * 
+ * The OpenCode SDK provides client.session.prompt() for LLM interactions.
+ * This skill creates a temporary session, sends the prompt, and extracts the response.
+ */
 export class NativeLLMSkill implements SkillExecutor {
     private client: Client;
+    private sessionCache: Map<string, string> = new Map();
 
     constructor(client: Client) {
         this.client = client;
@@ -27,32 +34,73 @@ export class NativeLLMSkill implements SkillExecutor {
         }
 
         try {
-            const response = await (this.client as any).llm.chat({
-                messages: [
-                    { role: 'system', content: safeSystemPrompt },
-                    { role: 'user', content: safeUserPrompt }
-                ]
+            // Create a new session for this analysis
+            const sessionResult = await this.client.session.create({
+                body: {
+                    title: `SpecZero Analysis - ${Date.now()}`
+                }
             });
 
-            // Defensive: Handle undefined/null response
-            if (response === undefined || response === null) {
-                return { success: false, error: "LLM returned undefined or null response" };
+            if (!sessionResult.data?.id) {
+                return { success: false, error: "Failed to create session for LLM analysis" };
             }
 
+            const sessionId = sessionResult.data.id;
+
+            // Combine system prompt and user prompt into a single message
+            const combinedPrompt = `${safeSystemPrompt}\n\n---\n\n${safeUserPrompt}`;
+
+            // Send prompt to the session
+            const promptResult = await this.client.session.prompt({
+                path: { id: sessionId },
+                body: {
+                    parts: [
+                        { type: 'text', text: combinedPrompt }
+                    ]
+                }
+            });
+
+            // Extract response content from the result
             let content = "";
-            if (typeof response === 'string') {
-                content = response;
-            } else if (response && typeof response.content === 'string') {
-                content = response.content;
-            } else if (response && response.message && typeof response.message.content === 'string') {
-                content = response.message.content;
-            } else {
-                // Fallback: stringify but guard against undefined
-                content = JSON.stringify(response) || '';
+            
+            if (promptResult.data) {
+                // The response structure may vary - handle multiple formats
+                const data = promptResult.data as any;
+                
+                if (typeof data === 'string') {
+                    content = data;
+                } else if (data.content && typeof data.content === 'string') {
+                    content = data.content;
+                } else if (data.text && typeof data.text === 'string') {
+                    content = data.text;
+                } else if (data.message?.content) {
+                    content = String(data.message.content);
+                } else if (data.parts && Array.isArray(data.parts)) {
+                    // Extract text from parts array
+                    content = data.parts
+                        .filter((p: any) => p.type === 'text' && p.text)
+                        .map((p: any) => p.text)
+                        .join('\n');
+                } else if (data.messages && Array.isArray(data.messages)) {
+                    // Extract from messages array (assistant responses)
+                    const assistantMessages = data.messages.filter((m: any) => m.role === 'assistant');
+                    if (assistantMessages.length > 0) {
+                        const lastMessage = assistantMessages[assistantMessages.length - 1];
+                        content = lastMessage.content || lastMessage.text || JSON.stringify(lastMessage);
+                    }
+                }
+                
+                // Fallback: stringify the entire response
+                if (!content && data) {
+                    content = JSON.stringify(data);
+                }
             }
 
             // Defensive: Ensure content is always a string
             content = String(content || '');
+
+            // Clean up session (fire and forget)
+            this.client.session.delete({ path: { id: sessionId } }).catch(() => {});
 
             if (!content.trim()) {
                 return { success: false, error: "LLM returned empty content" };
@@ -61,7 +109,9 @@ export class NativeLLMSkill implements SkillExecutor {
             return { success: true, data: content as T };
 
         } catch (error: any) {
-            return { success: false, error: `Native LLM Chat failed: ${error?.message || 'Unknown error'}` };
+            const errorMessage = error?.message || error?.toString() || 'Unknown error';
+            console.error('[NativeLLMSkill] Error:', errorMessage);
+            return { success: false, error: `Native LLM Chat failed: ${errorMessage}` };
         }
     }
 
