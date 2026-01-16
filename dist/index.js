@@ -25,6 +25,40 @@ import { DeploymentAgent } from './agents/spec-zero/ops/deployment.agent.js';
 import { MonitorAgent } from './agents/spec-zero/ops/monitor.agent.js';
 import { MlAgent } from './agents/spec-zero/ops/ml.agent.js';
 import { FlagAgent } from './agents/spec-zero/ops/flag.agent.js';
+/**
+ * Helper to convert agent result to string for OpenCode tool response.
+ * OpenCode tools MUST return Promise<string>, not objects.
+ */
+function resultToString(result) {
+    if (typeof result === 'string') {
+        return result;
+    }
+    if (result === null || result === undefined) {
+        return 'No result';
+    }
+    // If it's our standard result object
+    if (typeof result === 'object') {
+        if (result.success === false) {
+            return `Error: ${result.message || result.error || 'Unknown error'}`;
+        }
+        if (result.success === true) {
+            // Return the message or stringify data
+            if (result.message) {
+                return result.message;
+            }
+            if (result.data) {
+                if (typeof result.data === 'string') {
+                    return result.data;
+                }
+                return JSON.stringify(result.data, null, 2);
+            }
+            return 'Success';
+        }
+        // Generic object - stringify it
+        return JSON.stringify(result, null, 2);
+    }
+    return String(result);
+}
 const plugin = async (input) => {
     const { client } = input;
     console.log('RepoSpecZero Plugin Initializing...');
@@ -112,7 +146,8 @@ const plugin = async (input) => {
                     messages: [],
                     intent: { name: agent.id, confidence: 1.0 }
                 };
-                return await agent.process(context);
+                const result = await agent.process(context);
+                return resultToString(result);
             }
         };
     });
@@ -135,15 +170,12 @@ const plugin = async (input) => {
                             projectSlug: repoPath ? 'unknown-delegated' : undefined
                         });
                     }
-                    return { success: false, message: `Agent ${preferredAgent} not found.` };
+                    return `Error: Agent ${preferredAgent} not found.`;
                 }
                 // Fallback: analyze request to pick agent (Simple Router)
                 // For now, just return list of agents suggestions
                 const validAgents = specAgents.map(a => a.id).join(', ');
-                return {
-                    success: false,
-                    message: `Auto-routing not yet implemented. Please specify 'preferredAgent'. Available: ${validAgents}`
-                };
+                return `Auto-routing not yet implemented. Please specify 'preferredAgent'. Available: ${validAgents}`;
             }
         }
     };
@@ -170,7 +202,8 @@ const plugin = async (input) => {
                         messages: [],
                         intent: { name: 'analyze_repo', confidence: 1.0 }
                     };
-                    return await orchestrator.process(context);
+                    const result = await orchestrator.process(context);
+                    return resultToString(result);
                 }
             },
             // Debugging tool
@@ -180,7 +213,8 @@ const plugin = async (input) => {
                     repoPath: z.string().describe('Absolute path to the repository.')
                 },
                 execute: async ({ repoPath }) => {
-                    return await detectionSkill.detect(repoPath);
+                    const result = await detectionSkill.detect(repoPath);
+                    return String(result);
                 }
             },
             // Sub-Agent Tools
@@ -195,7 +229,7 @@ const plugin = async (input) => {
                     await client.tui.showToast({
                         body: {
                             title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin v0.1.13 is ready.',
+                            message: 'Repo Spec Zero Plugin v0.1.14 is ready.',
                             variant: 'info',
                             duration: 3000,
                         },

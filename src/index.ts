@@ -32,6 +32,41 @@ import { MonitorAgent } from './agents/spec-zero/ops/monitor.agent.js';
 import { MlAgent } from './agents/spec-zero/ops/ml.agent.js';
 import { FlagAgent } from './agents/spec-zero/ops/flag.agent.js';
 
+/**
+ * Helper to convert agent result to string for OpenCode tool response.
+ * OpenCode tools MUST return Promise<string>, not objects.
+ */
+function resultToString(result: any): string {
+    if (typeof result === 'string') {
+        return result;
+    }
+    if (result === null || result === undefined) {
+        return 'No result';
+    }
+    // If it's our standard result object
+    if (typeof result === 'object') {
+        if (result.success === false) {
+            return `Error: ${result.message || result.error || 'Unknown error'}`;
+        }
+        if (result.success === true) {
+            // Return the message or stringify data
+            if (result.message) {
+                return result.message;
+            }
+            if (result.data) {
+                if (typeof result.data === 'string') {
+                    return result.data;
+                }
+                return JSON.stringify(result.data, null, 2);
+            }
+            return 'Success';
+        }
+        // Generic object - stringify it
+        return JSON.stringify(result, null, 2);
+    }
+    return String(result);
+}
+
 const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     const { client } = input;
     console.log('RepoSpecZero Plugin Initializing...');
@@ -117,7 +152,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                 repoType: z.string().describe('Detected repository type.').optional(),
                 contextData: z.string().describe('JSON string of previous agent results if needed.').optional()
             },
-            execute: async (params: any): Promise<any> => {
+            execute: async (params: any): Promise<string> => {
                 // DEFENSIVE: Ensure all string params have defaults to prevent undefined.split() errors
                 const safeParams = {
                     ...params,
@@ -134,7 +169,8 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     messages: [],
                     intent: { name: agent.id, confidence: 1.0 }
                 };
-                return await agent.process(context as any);
+                const result = await agent.process(context as any);
+                return resultToString(result);
             }
         };
     });
@@ -148,7 +184,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                 preferredAgent: z.string().describe('ID of the agent to delegate to (e.g. "overview", "api").').optional(),
                 repoPath: z.string().describe('Path to the repo to contextuaize.').optional()
             },
-            execute: async ({ query, preferredAgent, repoPath }: { query: string; preferredAgent?: string; repoPath?: string }): Promise<any> => {
+            execute: async ({ query, preferredAgent, repoPath }: { query: string; preferredAgent?: string; repoPath?: string }): Promise<string> => {
 
                 // If preferred agent exists, call it
                 if (preferredAgent) {
@@ -159,16 +195,13 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                             projectSlug: repoPath ? 'unknown-delegated' : undefined
                         });
                     }
-                    return { success: false, message: `Agent ${preferredAgent} not found.` };
+                    return `Error: Agent ${preferredAgent} not found.`;
                 }
 
                 // Fallback: analyze request to pick agent (Simple Router)
                 // For now, just return list of agents suggestions
                 const validAgents = specAgents.map(a => a.id).join(', ');
-                return {
-                    success: false,
-                    message: `Auto-routing not yet implemented. Please specify 'preferredAgent'. Available: ${validAgents}`
-                };
+                return `Auto-routing not yet implemented. Please specify 'preferredAgent'. Available: ${validAgents}`;
             }
         }
     };
@@ -183,7 +216,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     repoPath: z.string().describe('Absolute path to a local repository (defaults to current working directory).').optional(),
                     taskId: z.string().describe('Optional task ID (e.g. from ClickUp) to update progress on.').optional()
                 },
-                execute: async (params: { repoUrl?: string; repoPath?: string; taskId?: string }): Promise<any> => {
+                execute: async (params: { repoUrl?: string; repoPath?: string; taskId?: string }): Promise<string> => {
                     // Input validation to prevent undefined values propagating
                     const validParams = {
                         repoUrl: params.repoUrl?.trim() || undefined,
@@ -197,7 +230,8 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                         messages: [],
                         intent: { name: 'analyze_repo', confidence: 1.0 }
                     };
-                    return await orchestrator.process(context as any);
+                    const result = await orchestrator.process(context as any);
+                    return resultToString(result);
                 }
             },
 
@@ -207,8 +241,9 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                 args: {
                     repoPath: z.string().describe('Absolute path to the repository.')
                 },
-                execute: async ({ repoPath }: { repoPath: string }): Promise<any> => {
-                    return await detectionSkill.detect(repoPath);
+                execute: async ({ repoPath }: { repoPath: string }): Promise<string> => {
+                    const result = await detectionSkill.detect(repoPath);
+                    return String(result);
                 }
             },
 
@@ -225,7 +260,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     await client.tui.showToast({
                         body: {
                             title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin v0.1.13 is ready.',
+                            message: 'Repo Spec Zero Plugin v0.1.14 is ready.',
                             variant: 'info',
                             duration: 3000,
                         },

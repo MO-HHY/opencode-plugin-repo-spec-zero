@@ -1,6 +1,6 @@
 {
     "name": "@mo-hhy/opencode-plugin-repo-spec-zero",
-    "version": "0.1.13",
+    "version": "0.1.14",
     "description": "RepoSpecZero: Agentic Spec Generation Plugin for OpenCode",
     "type": "module",
     "main": "dist/index.js",
