@@ -50,8 +50,15 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     const treeSkill = new BuildRepoTreeSkill();
     const treeSkillExecutor: SkillExecutor = {
         execute: async (params: any): Promise<any> => {
-            const tree = await treeSkill.generateTree(params.repoPath);
-            return { success: true, data: tree };
+            try {
+                const tree = treeSkill.generateTree(params.repoPath);  // Sync function - no await!
+                if (!tree || typeof tree !== 'string') {
+                    return { success: false, error: 'Failed to generate tree' };
+                }
+                return { success: true, data: tree };
+            } catch (error: any) {
+                return { success: false, error: `Tree generation failed: ${error.message}` };
+            }
         }
     };
 
@@ -177,9 +184,16 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     taskId: z.string().describe('Optional task ID (e.g. from ClickUp) to update progress on.').optional()
                 },
                 execute: async (params: { repoUrl?: string; repoPath?: string; taskId?: string }): Promise<any> => {
+                    // Input validation to prevent undefined values propagating
+                    const validParams = {
+                        repoUrl: params.repoUrl?.trim() || undefined,
+                        repoPath: params.repoPath?.trim() || undefined,
+                        taskId: params.taskId?.trim() || undefined
+                    };
+
                     const context = {
                         client,
-                        params,
+                        params: validParams,
                         messages: [],
                         intent: { name: 'analyze_repo', confidence: 1.0 }
                     };
@@ -211,7 +225,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
                     await client.tui.showToast({
                         body: {
                             title: 'RepoSpecZero Active',
-                            message: 'Repo Spec Zero Plugin v0.1.10 is ready.',
+                            message: 'Repo Spec Zero Plugin v0.1.11 is ready.',
                             variant: 'info',
                             duration: 3000,
                         },

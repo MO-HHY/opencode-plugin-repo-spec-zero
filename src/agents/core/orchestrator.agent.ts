@@ -92,9 +92,24 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
         const currentDir = process.cwd();
         const treeExecutor = this.skills.get('repo_spec_zero_build_tree');
         let repoStructure = "";
+
         if (treeExecutor) {
-            const treeResult = await treeExecutor.execute<string>({ repoPath: workDir });
-            repoStructure = treeResult.data || "";
+            try {
+                const treeResult = await treeExecutor.execute<string>({ repoPath: workDir });
+                // Improved validation with type checking
+                if (treeResult?.success && treeResult?.data && typeof treeResult.data === 'string') {
+                    repoStructure = treeResult.data.trim();
+                    if (repoStructure.length === 0) {
+                        repoStructure = "(empty repository structure)";
+                    }
+                } else {
+                    await this.notify(client, `⚠️ Tree generation failed, using empty structure`, 'warning');
+                    repoStructure = "(tree generation failed)";
+                }
+            } catch (e: any) {
+                await this.notify(client, `⚠️ Tree skill error: ${e.message}`, 'warning');
+                repoStructure = "(tree skill error)";
+            }
         }
 
         // 4. Execution Plan (Topological Sort)

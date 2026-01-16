@@ -7,7 +7,7 @@ import { join, dirname } from 'node:path';
 const PLUGIN_PKG = '@mo-hhy/opencode-plugin-repo-spec-zero';
 // We set a default range, but usually we want to match the version of the installer if executed via npx from the same package
 // But since the package IS the plugin, we can use the package's own version if we read it, or just use 'latest' or a caret range.
-const DEFAULT_PLUGIN_RANGE = '^0.1.0';
+const DEFAULT_PLUGIN_RANGE = '^0.1.11';
 
 function log(msg: string) {
     console.log(`[RepoSpecZero Installer] ${msg}`);

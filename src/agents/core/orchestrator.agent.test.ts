@@ -22,7 +22,7 @@ describe('RepoSpecZeroOrchestrator', () => {
 
             expect(gitSkill.cloneOrUpdate).not.toHaveBeenCalled();
             expect(result.success).toBe(true);
-            expect(result.data?.specDir).toBe(path.join(tmpRepo, `${path.basename(tmpRepo)} -spec`));
+            expect(result.data?.specDir).toBe(path.join(tmpRepo, `${path.basename(tmpRepo)}-spec`));
         } finally {
             fs.rmSync(tmpRepo, { recursive: true, force: true });
         }
