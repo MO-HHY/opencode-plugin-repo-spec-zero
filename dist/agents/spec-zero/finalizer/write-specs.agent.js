@@ -96,6 +96,16 @@ export class WriteSpecsAgent extends SubAgent {
                     logger.info(`Wrote: ${relativePath}`);
                 }
             }
+            // 3b. Write standalone diagrams (v2.1.0)
+            const diagrams = sharedContext?.getAllDiagrams() || [];
+            if (diagrams.length > 0) {
+                logger.info(`Writing ${diagrams.length} standalone diagrams`);
+                for (const diagram of diagrams) {
+                    await manager.writeSpec(specsPath, diagram.path, diagram.content);
+                    filesWritten.push(diagram.path);
+                    logger.info(`Wrote diagram: ${diagram.path}`);
+                }
+            }
             // 4. Generate and write index.md
             const indexContent = this.generateIndex(projectSlug, repoType, agentOutputs);
             await manager.writeIndex(specsPath, indexContent);
@@ -143,7 +153,7 @@ export class WriteSpecsAgent extends SubAgent {
                 data: {
                     ...result,
                     output: summary,
-                    promptVersion: { id: 'write_specs', version: '2', hash: 'native' },
+                    promptVersion: { id: 'finalizer/write', version: '2', hash: 'native' },
                 },
                 message: `Generated ${filesWritten.length} spec files as v1.0.0`
             };

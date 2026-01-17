@@ -93,10 +93,29 @@ export class SharedContext {
         return this.agentOutputs.has(agentId);
     }
     /**
+     * Get set of all completed prompt IDs
+     */
+    getCompletedPrompts() {
+        return new Set(Array.from(this.agentOutputs.values())
+            .map(o => o.promptVersion.id));
+    }
+    /**
      * Get all executed agent IDs
      */
     getExecutedAgentIds() {
         return Array.from(this.agentOutputs.keys());
+    }
+    /**
+     * Get all diagrams from all agents
+     */
+    getAllDiagrams() {
+        const allDiagrams = [];
+        for (const output of this.agentOutputs.values()) {
+            if (output.diagrams && output.diagrams.length > 0) {
+                allDiagrams.push(...output.diagrams);
+            }
+        }
+        return allDiagrams;
     }
     /**
      * Build context for an agent based on its dependencies

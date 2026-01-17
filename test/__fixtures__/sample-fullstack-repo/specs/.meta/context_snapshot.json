@@ -3,8 +3,8 @@
     "projectSlug": "sample-fullstack-repo",
     "repoType": "fullstack",
     "baseDir": "/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo",
-    "analysisDate": "2026-01-16T23:30:49.350Z",
-    "durationMs": 52,
+    "analysisDate": "2026-01-16T23:32:44.960Z",
+    "durationMs": 53,
     "agentsExecuted": [
       "bootstrap",
       "dependencies",
@@ -127,7 +127,7 @@
         "version": "1",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:30:49.353Z"
+      "timestamp": "2026-01-16T23:32:44.964Z"
     },
     "dependencies": {
       "agentId": "dependencies",
@@ -140,7 +140,7 @@
         "hash": "3b5ffb13"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:30:49.356Z"
+      "timestamp": "2026-01-16T23:32:44.967Z"
     },
     "overview": {
       "agentId": "overview",
@@ -153,7 +153,7 @@
         "hash": "4f77d5b2"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:30:49.356Z"
+      "timestamp": "2026-01-16T23:32:44.967Z"
     },
     "entities": {
       "agentId": "entities",
@@ -171,7 +171,7 @@
           "content": "---\nuid: entities:diagram:erd\ntitle: \"Entity Relationship Diagram\"\ntype: diagram\ndiagram_type: erd\ncreated: 2026-01-16\nsource: 01-domain/entities.md\n---\n\n```mermaid\nerDiagram\n    {{name}} {\n\n    }\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:30:49.358Z"
+      "timestamp": "2026-01-16T23:32:44.969Z"
     },
     "architecture": {
       "agentId": "architecture",
@@ -184,7 +184,7 @@
         "hash": "bd8a8720"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:30:49.358Z"
+      "timestamp": "2026-01-16T23:32:44.969Z"
     },
     "backend-modules": {
       "agentId": "backend-modules",
@@ -202,7 +202,7 @@
           "content": "---\nuid: backend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-16\nsource: 02-modules/backend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:30:49.359Z"
+      "timestamp": "2026-01-16T23:32:44.970Z"
     },
     "frontend-modules": {
       "agentId": "frontend-modules",
@@ -220,7 +220,7 @@
           "content": "---\nuid: frontend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-16\nsource: 02-modules/frontend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:30:49.359Z"
+      "timestamp": "2026-01-16T23:32:44.970Z"
     },
     "database": {
       "agentId": "database",
@@ -233,7 +233,7 @@
         "hash": "e0f6f86b"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:30:49.359Z"
+      "timestamp": "2026-01-16T23:32:44.970Z"
     },
     "api-rest": {
       "agentId": "api-rest",
@@ -246,7 +246,7 @@
         "hash": "a4d7ac10"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:30:49.361Z"
+      "timestamp": "2026-01-16T23:32:44.974Z"
     },
     "components": {
       "agentId": "components",
@@ -259,7 +259,7 @@
         "hash": "24105529"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:30:49.361Z"
+      "timestamp": "2026-01-16T23:32:44.974Z"
     },
     "summary": {
       "agentId": "summary",
@@ -271,7 +271,7 @@
         "version": "1",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:30:49.362Z"
+      "timestamp": "2026-01-16T23:32:44.975Z"
     },
     "services": {
       "agentId": "services",
@@ -289,7 +289,7 @@
           "content": "---\nuid: services:diagram:sequence\ntitle: \"Sequence Diagram\"\ntype: diagram\ndiagram_type: sequence\ncreated: 2026-01-16\nsource: 06-integration/services.md\n---\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:30:49.363Z"
+      "timestamp": "2026-01-16T23:32:44.975Z"
     },
     "structure_builder": {
       "agentId": "structure_builder",
@@ -301,7 +301,7 @@
         "version": "1",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:30:49.363Z"
+      "timestamp": "2026-01-16T23:32:44.975Z"
     },
     "write_specs": {
       "agentId": "write_specs",
@@ -313,7 +313,7 @@
         "version": "2",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:30:49.402Z"
+      "timestamp": "2026-01-16T23:32:45.012Z"
     }
   }
 }

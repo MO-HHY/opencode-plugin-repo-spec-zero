@@ -3,6 +3,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SharedContext } from '../../core/context.js';
 import { DAGExecutor, DEFAULT_DAG, GENERATION_DAG } from '../../core/dag-executor.js';
+// v2.1.0: Core Components
+import { FeatureDetector } from '../../core/feature-detector.js';
+import { PromptRegistry } from '../../core/prompt-registry.js';
+import { SmartDAGPlanner } from '../../core/smart-dag-planner.js';
+import { PromptRouter } from '../../core/prompt-router.js';
+import { TemplateLoader } from '../../core/template-loader.js';
+import { DiagramGenerator } from '../../core/diagram-generator.js';
+import { GenericAnalysisAgent } from '../generic-analysis.agent.js';
 export class RepoSpecZeroOrchestrator extends BaseAgent {
     detectionSkill;
     gitSkill;
@@ -84,9 +92,18 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             projectSlug = path.basename(workDir) || 'unknown-repo';
             await this.notify(client, `Analyzing current directory: ${workDir}`);
         }
-        // 3. Detect Type
-        await this.notify(client, `Detecting repository type...`);
-        const repoType = await this.detectionSkill.detect(workDir);
+        // v2.1.0: Initialize Core Components early for detection
+        const pluginRoot = process.cwd();
+        const registry = new PromptRegistry(pluginRoot);
+        const featureDetector = new FeatureDetector();
+        const planner = new SmartDAGPlanner(registry, featureDetector);
+        const router = new PromptRouter(registry, path.join(pluginRoot, 'prompts'));
+        const templateLoader = new TemplateLoader(pluginRoot);
+        const diagramGenerator = new DiagramGenerator();
+        // 3. Detect Features and Type
+        await this.notify(client, `Detecting repository features...`);
+        const detectedFeatures = await featureDetector.detect(workDir);
+        const repoType = detectedFeatures.repoType;
         await this.notify(client, `Detected type: ${repoType}`);
         // 4. Generate directory structure
         const treeExecutor = this.skills.get('repo_spec_zero_build_tree');
@@ -118,28 +135,82 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             repoStructure
         });
         // 6. Build agent map from subAgents
-        const agentMap = new Map(this.subAgents.map(a => [a.id, a]));
-        // v2.0.0: Get options from params
-        const useV2 = params.useV2 !== false; // Default to v2.0.0 behavior
+        let agentMap = new Map(this.subAgents.map(a => [a.id, a]));
+        // v2.1.0: Get options from params
+        const useSmartDag = params.smartDag !== false; // Default true
+        const diagramMode = String(params.diagrams || 'both');
+        const templateOverride = params.template ? String(params.template) : undefined;
+        const skipAgents = Array.isArray(params.skipAgents) ? params.skipAgents : [];
+        const useV2 = params.useV2 !== false; // Still needed for legacy mode
         const specsFolder = String(params.specsFolder || 'specs');
         const noPush = Boolean(params.noPush);
-        const pluginVersion = String(params.pluginVersion || '2.0.0');
-        // v2.0.0: Select initial DAG (will be adjusted after submodule_check)
-        const initialDag = useV2 ? GENERATION_DAG : DEFAULT_DAG;
+        const pluginVersion = String(params.pluginVersion || '2.1.0');
+        let initialDag;
+        if (useSmartDag) {
+            await this.notify(client, `Planning dynamic DAG with SmartDAGPlanner...`);
+            const plannedDag = planner.planFromFeatures(detectedFeatures);
+            await this.notify(client, `Planned ${plannedDag.agents.length} agents across ${plannedDag.layers.length} layers.`);
+            // Convert PlannedDAG to DAGDefinition
+            initialDag = {
+                version: plannedDag.version,
+                nodes: plannedDag.agents.map(pa => ({
+                    agentId: pa.id,
+                    dependencies: pa.dependencies,
+                    parallel: pa.parallel,
+                    optional: pa.optional
+                }))
+            };
+            // Register dynamic GenericAnalysisAgents
+            for (const pa of plannedDag.agents) {
+                // Skip core agents that are already in the registry
+                const coreAgents = [
+                    'bootstrap', 'submodule_check', 'summary', 'structure_builder',
+                    'write_specs', 'commit_push', 'audit_report', 'apply_changes'
+                ];
+                if (coreAgents.includes(pa.id)) {
+                    continue;
+                }
+                // Skip explicitly requested agents
+                if (skipAgents.includes(pa.id)) {
+                    continue;
+                }
+                // Apply overrides
+                const agentPa = {
+                    ...pa,
+                    templateId: templateOverride || pa.templateId
+                };
+                const dynamicAgent = new GenericAnalysisAgent(agentPa, router, templateLoader, diagramGenerator);
+                // Inherit skills from orchestrator
+                for (const [skillId, executor] of this.skills.entries()) {
+                    dynamicAgent.registerSkill(skillId, executor);
+                }
+                agentMap.set(pa.id, dynamicAgent);
+            }
+        }
+        else {
+            // v2.0.0: Select initial DAG
+            initialDag = useV2 ? GENERATION_DAG : DEFAULT_DAG;
+        }
         // 7. Create DAG Executor with progress tracking
         const startTime = Date.now();
         const executionLog = [];
         const dagExecutor = new DAGExecutor(initialDag, sharedContext, agentMap, {
-            // v2.0.0: Pass options to agents
+            // v2.0.0 & v2.1.0: Pass options to agents
             specsFolder,
             noPush,
             pluginVersion,
+            // v2.1.0: New options for skip logic and diagrams
+            planner: useSmartDag ? planner : undefined,
+            features: detectedFeatures,
             onProgress: (agentId, status, message) => {
                 if (status === 'start') {
                     console.log(`[DAG] Starting ${agentId}...`);
                 }
                 else if (status === 'success') {
                     console.log(`[DAG] ${agentId} completed successfully`);
+                }
+                else if (status === 'skip') {
+                    console.log(`[DAG] ${agentId} skipped: ${message}`);
                 }
                 else {
                     console.log(`[DAG] ${agentId} failed: ${message}`);
@@ -152,9 +223,9 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
                 for (const result of results) {
                     executionLog.push({
                         agent: result.agentId,
-                        status: result.success ? 'success' : 'failed',
+                        status: result.success ? (result.skipped ? 'skip' : 'success') : 'failed',
                         durationMs: result.durationMs,
-                        message: result.error
+                        message: result.error || result.skipReason
                     });
                 }
             }
@@ -168,7 +239,7 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             };
         }
         // 9. Execute DAG
-        await this.notify(client, `Starting ${useV2 ? 'v2.0' : 'v1.x'} DAG execution with ${initialDag.nodes.length} agents...`);
+        await this.notify(client, `Starting ${useSmartDag ? 'v2.1' : (useV2 ? 'v2.0' : 'v1.x')} DAG execution with ${initialDag.nodes.length} agents...`);
         let dagSummary;
         try {
             dagSummary = await dagExecutor.execute(client);
@@ -201,7 +272,7 @@ Duration: ${Math.round(totalDuration / 1000)}s
 ## Execution Details
 | Agent | Status | Duration | Message |
 |-------|--------|----------|---------|
-${executionLog.map(l => `| ${l.agent} | ${l.status === 'success' ? 'Success' : 'Failed'} | ${l.durationMs}ms | ${l.message || ''} |`).join('\n')}
+${executionLog.map(l => `| ${l.agent} | ${l.status === 'success' ? 'Success' : (l.status === 'skip' ? 'Skipped' : 'Failed')} | ${l.durationMs}ms | ${l.message || ''} |`).join('\n')}
 
 ## Context Metadata
 \`\`\`json
@@ -251,7 +322,7 @@ ${contextMetadata.promptVersions?.map((p) => `- ${p.id}@v${p.version} (${p.hash}
                 contextMetadata,
                 // v2.0.0: Additional info
                 mode: detectedMode,
-                version: useV2 ? '2.0.0' : '1.0.0',
+                version: useSmartDag ? '2.1.0' : (useV2 ? '2.0.0' : '1.0.0'),
                 specsFolder: useV2 ? specsFolder : undefined,
             }
         };

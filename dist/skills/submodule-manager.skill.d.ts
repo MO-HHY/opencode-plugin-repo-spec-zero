@@ -30,6 +30,7 @@ export interface SubmoduleManagerOptions {
 export declare class SubmoduleManager {
     private logger;
     private options;
+    private validator;
     constructor(logger: Logger, options?: SubmoduleManagerOptions);
     /**
      * Get the current state of the specs submodule

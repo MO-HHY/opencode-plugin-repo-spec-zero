@@ -10,7 +10,8 @@
  */
 import type { SharedContext } from './context.js';
 import type { BaseAgent } from '../agents/base.js';
-import type { DAGNode, DAGDefinition, DAGExecutionResult, DAGExecutionSummary, SpecZeroMode } from '../types.js';
+import type { DAGNode, DAGDefinition, DAGExecutionResult, DAGExecutionSummary, SpecZeroMode, DetectedFeatures } from '../types.js';
+import { SmartDAGPlanner } from './smart-dag-planner.js';
 export type { DAGNode, DAGDefinition };
 /**
  * v2.0.0: GENERATION Mode DAG
@@ -32,7 +33,7 @@ export declare const DEFAULT_DAG: DAGDefinition;
  */
 export declare function selectDAG(mode: SpecZeroMode): DAGDefinition;
 export interface DAGExecutorOptions {
-    onProgress?: (agentId: string, status: 'start' | 'success' | 'error', message?: string) => void;
+    onProgress?: (agentId: string, status: 'start' | 'success' | 'error' | 'skip', message?: string) => void;
     onLayerStart?: (layer: number, agents: string[]) => void;
     onLayerComplete?: (layer: number, results: DAGExecutionResult[]) => void;
     skipOptionalOnFailure?: boolean;
@@ -44,6 +45,10 @@ export interface DAGExecutorOptions {
     pluginVersion?: string;
     /** v2.0.0: Skip push operations */
     noPush?: boolean;
+    /** v2.1.0: Smart planner for skip logic */
+    planner?: SmartDAGPlanner;
+    /** v2.1.0: Detected features for skip logic */
+    features?: DetectedFeatures;
 }
 export declare class DAGExecutor {
     private dag;
@@ -53,6 +58,9 @@ export declare class DAGExecutor {
     private executionResults;
     /** v2.0.0: Detected mode after submodule check */
     private detectedMode;
+    /** v2.1.0: Tracking for skip logic */
+    private completedAgents;
+    private failedAgents;
     constructor(dag: DAGDefinition, context: SharedContext, agents: Map<string, BaseAgent>, options?: DAGExecutorOptions);
     /**
      * Update mode after submodule check

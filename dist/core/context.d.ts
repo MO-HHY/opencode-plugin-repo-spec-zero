@@ -7,6 +7,7 @@
  * - Prompt version tracking
  * - Token-efficient context building
  */
+import type { StandaloneDiagram } from '../types.js';
 export interface PromptVersion {
     id: string;
     version: string;
@@ -18,6 +19,7 @@ export interface AgentOutput {
     summary: string;
     fullContent: string;
     promptVersion: PromptVersion;
+    diagrams?: StandaloneDiagram[];
     timestamp: Date;
 }
 export interface KeyFile {
@@ -78,9 +80,17 @@ export declare class SharedContext {
      */
     hasOutput(agentId: string): boolean;
     /**
+     * Get set of all completed prompt IDs
+     */
+    getCompletedPrompts(): Set<string>;
+    /**
      * Get all executed agent IDs
      */
     getExecutedAgentIds(): string[];
+    /**
+     * Get all diagrams from all agents
+     */
+    getAllDiagrams(): StandaloneDiagram[];
     /**
      * Build context for an agent based on its dependencies
      * This is the key method for token economy - only passes what's needed

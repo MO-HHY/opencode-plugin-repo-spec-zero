@@ -146,6 +146,9 @@ export class DAGExecutor {
     executionResults = [];
     /** v2.0.0: Detected mode after submodule check */
     detectedMode = 'generation';
+    /** v2.1.0: Tracking for skip logic */
+    completedAgents = new Set();
+    failedAgents = new Set();
     constructor(dag, context, agents, options = {}) {
         this.dag = dag;
         this.context = context;
@@ -308,6 +311,7 @@ export class DAGExecutor {
                     summary: this.extractSummary(result.data.output || JSON.stringify(result.data)),
                     fullContent: result.data.output || JSON.stringify(result.data),
                     promptVersion: result.data.promptVersion || { id: agentId, version: '1', hash: 'unknown' },
+                    diagrams: result.data.diagrams,
                     timestamp: new Date()
                 };
                 this.context.registerOutput(output);
@@ -323,6 +327,7 @@ export class DAGExecutor {
                     summary: this.extractSummary(result.data.output || ''),
                     fullContent: result.data.output || '',
                     promptVersion: result.data.promptVersion || { id: agentId, version: '1', hash: 'unknown' },
+                    diagrams: result.data.diagrams,
                     timestamp: new Date()
                 } : undefined
             };
@@ -374,31 +379,76 @@ export class DAGExecutor {
         const layers = this.getLayers();
         const allResults = [];
         const startTime = Date.now();
+        // Reset tracking
+        this.completedAgents.clear();
+        this.failedAgents.clear();
         console.log(`[DAG] Executing ${this.dag.nodes.length} agents in ${layers.length} layers`);
         for (let i = 0; i < layers.length; i++) {
             const layer = layers[i];
             console.log(`[DAG] Layer ${i + 1}/${layers.length}: ${layer.join(', ')}`);
             this.options.onLayerStart?.(i, layer);
             // Execute agents in parallel within layer
-            const layerResults = await Promise.all(layer.map(agentId => this.executeAgent(agentId, client)));
+            const layerResults = await Promise.all(layer.map(async (agentId) => {
+                // v2.1.0: Check if agent should be skipped using SmartDAGPlanner
+                if (this.options.planner && this.options.features) {
+                    const node = this.dag.nodes.find(n => n.agentId === agentId);
+                    if (node) {
+                        // Resolve '*' dependencies for the skip checker
+                        let dependencies = node.dependencies;
+                        if (dependencies.includes('*')) {
+                            dependencies = this.dag.nodes
+                                .map(n => n.agentId)
+                                .filter(id => id !== agentId);
+                        }
+                        // Map DAGNode to a subset of PlannedAgent that shouldSkipAgent needs
+                        const plannedAgent = {
+                            id: node.agentId,
+                            dependencies: dependencies,
+                            optional: node.optional || false
+                        };
+                        const skipResult = this.options.planner.shouldSkipAgent(plannedAgent, this.options.features, this.completedAgents, this.failedAgents);
+                        if (skipResult.skip) {
+                            console.log(`[DAG] Skipping agent ${agentId}: ${skipResult.reason}`);
+                            this.options.onProgress?.(agentId, 'skip', skipResult.reason);
+                            return {
+                                agentId,
+                                success: true,
+                                skipped: true,
+                                skipReason: skipResult.reason,
+                                durationMs: 0
+                            };
+                        }
+                    }
+                }
+                const result = await this.executeAgent(agentId, client);
+                // Track for cascade skip logic
+                if (result.success && !result.skipped) {
+                    this.completedAgents.add(agentId);
+                }
+                else if (!result.success) {
+                    this.failedAgents.add(agentId);
+                }
+                return result;
+            }));
             allResults.push(...layerResults);
             this.options.onLayerComplete?.(i, layerResults);
             // Log layer results
-            const successful = layerResults.filter(r => r.success).length;
+            const successful = layerResults.filter(r => r.success && !r.skipped).length;
+            const skipped = layerResults.filter(r => r.skipped).length;
             const failed = layerResults.filter(r => !r.success).length;
-            console.log(`[DAG] Layer ${i + 1} complete: ${successful} success, ${failed} failed`);
+            console.log(`[DAG] Layer ${i + 1} complete: ${successful} success, ${skipped} skipped, ${failed} failed`);
         }
         this.executionResults = allResults;
         const summary = {
             totalAgents: this.dag.nodes.length,
-            executed: allResults.length,
-            successful: allResults.filter(r => r.success).length,
+            executed: allResults.filter(r => !r.skipped).length,
+            successful: allResults.filter(r => r.success && !r.skipped).length,
             failed: allResults.filter(r => !r.success).length,
-            skipped: this.dag.nodes.length - allResults.length,
+            skipped: allResults.filter(r => r.skipped).length + (this.dag.nodes.length - allResults.length),
             totalDurationMs: Date.now() - startTime,
             results: allResults
         };
-        console.log(`[DAG] Execution complete: ${summary.successful}/${summary.executed} successful in ${summary.totalDurationMs}ms`);
+        console.log(`[DAG] Execution complete: ${summary.successful} successful, ${summary.skipped} skipped, ${summary.failed} failed in ${summary.totalDurationMs}ms`);
         return summary;
     }
     /**

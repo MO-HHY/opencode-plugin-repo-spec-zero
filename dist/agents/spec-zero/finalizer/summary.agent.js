@@ -65,7 +65,7 @@ export class SummaryAgent extends SubAgent {
             const indexContent = this.generateIndex(projectSlug, sharedContext);
             fs.writeFileSync(path.join(specDir, 'index.md'), indexContent);
             const promptVersion = {
-                id: 'summary',
+                id: 'analysis/summary',
                 version: '1',
                 hash: 'native'
             };

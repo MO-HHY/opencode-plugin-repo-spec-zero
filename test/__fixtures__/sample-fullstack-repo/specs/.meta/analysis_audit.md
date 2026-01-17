@@ -1,5 +1,5 @@
 # Analysis Audit Log
-Date: 2026-01-16T23:30:49.402Z
+Date: 2026-01-16T23:32:45.013Z
 Repo: sample-fullstack-repo
 Type: fullstack
 Mode: generation
@@ -16,7 +16,7 @@ Duration: 0s
 ## Execution Details
 | Agent | Status | Duration | Message |
 |-------|--------|----------|---------|
-| bootstrap | Success | 1ms |  |
+| bootstrap | Success | 2ms |  |
 | overview | Success | 3ms |  |
 | dependencies | Success | 1ms |  |
 | architecture | Success | 2ms |  |
@@ -24,13 +24,13 @@ Duration: 0s
 | backend-modules | Success | 1ms |  |
 | frontend-modules | Success | 0ms |  |
 | database | Success | 0ms |  |
-| api-rest | Success | 2ms |  |
-| components | Success | 1ms |  |
-| services | Success | 2ms |  |
-| security | Failed | 0ms | No prompt found for agent security in repo type fullstack |
-| summary | Success | 0ms |  |
+| api-rest | Success | 4ms |  |
+| components | Success | 3ms |  |
+| services | Success | 1ms |  |
+| security | Failed | 1ms | No prompt found for agent security in repo type fullstack |
+| summary | Success | 1ms |  |
 | structure_builder | Success | 0ms |  |
-| write_specs | Success | 39ms |  |
+| write_specs | Success | 37ms |  |
 
 ## Context Metadata
 ```json
@@ -38,8 +38,8 @@ Duration: 0s
   "projectSlug": "sample-fullstack-repo",
   "repoType": "fullstack",
   "baseDir": "/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo",
-  "analysisDate": "2026-01-16T23:30:49.350Z",
-  "durationMs": 52,
+  "analysisDate": "2026-01-16T23:32:44.960Z",
+  "durationMs": 53,
   "agentsExecuted": [
     "bootstrap",
     "dependencies",

@@ -175,7 +175,7 @@ export class FeatureDetector {
                 exists('src/api') || exists('server'),
             hasFrontend: exists('src/components') || exists('frontend') || exists('app') ||
                 exists('pages') || exists('src/views') || exists('src/ui') ||
-                exists('src/app') || exists('components'),
+                exists('src/app') || exists('components') || exists('src/client') || exists('client'),
             hasTests: exists('tests') || exists('__tests__') || exists('test') ||
                 exists('spec') || exists('src/__tests__') || exists('e2e') ||
                 exists('cypress') || exists('playwright'),

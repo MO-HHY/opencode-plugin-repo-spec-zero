@@ -17,11 +17,13 @@ import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import { migrateManifest, needsMigration } from '../core/manifest-migrator.js';
+import { ManifestValidator } from '../core/manifest-validator.js';
 import { DEFAULT_PLUGIN_CONFIG, SPECS_FOLDER_STRUCTURE, GENERATED_SUBDIRS, } from '../types.js';
 const execAsync = promisify(exec);
 export class SubmoduleManager {
     logger;
     options;
+    validator;
     constructor(logger, options = {}) {
         this.logger = logger;
         this.options = {
@@ -30,6 +32,7 @@ export class SubmoduleManager {
             hasGhCli: false,
             ...options,
         };
+        this.validator = new ManifestValidator();
     }
     // =========================================================================
     // STATE DETECTION
@@ -260,6 +263,13 @@ export class SubmoduleManager {
         try {
             const content = fs.readFileSync(manifestPath, 'utf-8');
             let manifest = JSON.parse(content);
+            // v2.1.0: Validate and repair if needed
+            const validation = this.validator.validate(manifest);
+            if (!validation.valid) {
+                this.logger.warn?.(`Manifest validation errors: ${validation.errors.join(', ')}`);
+                this.logger.info?.('Attempting to repair manifest...');
+                manifest = this.validator.repairManifest(manifest);
+            }
             // v2.1.0: Auto-migrate if needed
             if (needsMigration(manifest)) {
                 this.logger.info?.('Migrating manifest from v2.0 to v2.1...');
@@ -267,6 +277,13 @@ export class SubmoduleManager {
                 // Persist migrated manifest
                 await this.writeManifest(specsPath, manifest);
                 this.logger.info?.('Manifest migrated successfully');
+            }
+            // v2.1.0: Validate file locations for v2.1 manifests
+            if (manifest.schema_version === '2.1') {
+                const fileValidation = this.validator.validateFileLocations(manifest, specsPath);
+                if (!fileValidation.valid) {
+                    this.logger.warn?.(`Manifest file location errors: ${fileValidation.errors.join(', ')}`);
+                }
             }
             return manifest;
         }
@@ -280,6 +297,13 @@ export class SubmoduleManager {
      */
     async writeManifest(specsPath, manifest) {
         const manifestPath = path.join(specsPath, SPECS_FOLDER_STRUCTURE.MANIFEST);
+        // v2.1.0: Validate before writing
+        const validation = this.validator.validate(manifest);
+        if (!validation.valid) {
+            this.logger.warn?.(`Writing manifest with errors: ${validation.errors.join(', ')}`);
+            // We still write it but we warn. In some cases we might want to block it, 
+            // but for now let's be permissive but loud.
+        }
         // Ensure .meta directory exists
         const metaDir = path.join(specsPath, SPECS_FOLDER_STRUCTURE.META);
         if (!fs.existsSync(metaDir)) {

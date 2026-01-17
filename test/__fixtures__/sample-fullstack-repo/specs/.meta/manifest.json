@@ -286,6 +286,35 @@
         "index.md"
       ],
       "summary": "Initial generation: 15 spec files created"
+    },
+    {
+      "version": "1.0.0",
+      "type": "generation",
+      "date": "2026-01-16T23:32:45.012Z",
+      "repo_sha": "2217b86807ba7c850a943914188f2cc67e45f4a8",
+      "repo_branch": "main",
+      "specs_sha": "",
+      "plugin_version": "2.1.0",
+      "agents_run": 11,
+      "agents_succeeded": 11,
+      "files_generated": [
+        "06-integration/dependencies.md",
+        "00-foundation/overview.md",
+        "01-domain/entities.md",
+        "00-foundation/architecture.md",
+        "02-modules/backend/index.md",
+        "02-modules/frontend/index.md",
+        "04-data/database.md",
+        "03-api/rest.md",
+        "02-modules/frontend/components.md",
+        "06-integration/services.md",
+        "_diagrams/analysis-entities-erd.mmd",
+        "_diagrams/analysis-modules-flowchart.mmd",
+        "_diagrams/analysis-modules-flowchart.mmd",
+        "_diagrams/integration-detect-services-sequence.mmd",
+        "index.md"
+      ],
+      "summary": "Initial generation: 15 spec files created"
     }
   ],
   "audits": [],

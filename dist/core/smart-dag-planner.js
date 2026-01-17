@@ -117,7 +117,7 @@ export class SmartDAGPlanner {
         if (hasBackend) {
             agents.push({
                 id: 'backend-modules',
-                promptId: 'analysis/modules-backend',
+                promptId: 'analysis/modules',
                 dependencies: ['architecture'],
                 parallel: true,
                 optional: false,
@@ -129,7 +129,7 @@ export class SmartDAGPlanner {
         if (hasFrontend) {
             agents.push({
                 id: 'frontend-modules',
-                promptId: 'analysis/modules-frontend',
+                promptId: 'analysis/modules',
                 dependencies: ['architecture'],
                 parallel: true,
                 optional: false,
@@ -429,7 +429,6 @@ export class SmartDAGPlanner {
      * Build execution layers from agents
      */
     buildLayers(agents) {
-        // TODO: Implement in S3-T2.6
         const layers = [];
         const maxLayer = Math.max(...agents.map(a => a.layer), 0);
         for (let i = 0; i <= maxLayer; i++) {
@@ -444,8 +443,39 @@ export class SmartDAGPlanner {
      * Assign and override prompts for specific frameworks
      */
     assignPrompts(agents, features) {
-        // TODO: Implement in S3-T2.7
-        return this.resolveDependencies(agents);
+        // First resolve '*' dependencies
+        const resolved = this.resolveDependencies(agents);
+        // Override prompts for specific frameworks
+        return resolved.map(agent => {
+            // Next.js specific modules
+            if (agent.id === 'frontend-modules' && features.frameworks.has('nextjs')) {
+                return { ...agent, promptId: 'analysis/modules-nextjs' };
+            }
+            // Nuxt.js specific modules
+            if (agent.id === 'frontend-modules' && features.frameworks.has('nuxt')) {
+                return { ...agent, promptId: 'analysis/modules-nuxt' };
+            }
+            // NestJS specific modules
+            if (agent.id === 'backend-modules' && features.frameworks.has('nest')) {
+                return { ...agent, promptId: 'analysis/modules-nestjs' };
+            }
+            // Fastify specific API detection
+            if (agent.id === 'api-rest' && features.frameworks.has('fastify')) {
+                return { ...agent, promptId: 'api/detect-endpoints-fastify' };
+            }
+            // Express specific API detection
+            if (agent.id === 'api-rest' && features.frameworks.has('express')) {
+                return { ...agent, promptId: 'api/detect-endpoints-express' };
+            }
+            // Prisma specific database
+            if (agent.id === 'database' && features.features.has(FEATURE_FLAGS.HAS_ORM)) {
+                // Check for specific ORM in frameworks or features
+                if (features.frameworks.has('prisma')) {
+                    return { ...agent, promptId: 'data/detect-schema-prisma' };
+                }
+            }
+            return agent;
+        });
     }
     /**
      * Resolve special '*' dependencies to actual agent IDs
@@ -466,17 +496,18 @@ export class SmartDAGPlanner {
      * Estimate execution duration
      */
     estimateDuration(agents) {
-        // TODO: Implement in S3-T2.6
         const layers = this.buildLayers(agents);
-        // ~30s per agent, parallelism reduces total time
+        // ~30-45s per agent, parallelism reduces total time
         let totalSeconds = 0;
         for (const layer of layers) {
             if (layer.length === 1) {
-                totalSeconds += 30;
+                // Sequential agent
+                totalSeconds += 45;
             }
             else {
-                // Parallel agents: time = max single + overhead
-                totalSeconds += 20 + (layer.length * 5);
+                // Parallel agents: time = max single + overhead per agent
+                // We assume 45s for the longest agent + 10s per additional agent in parallel
+                totalSeconds += 45 + ((layer.length - 1) * 10);
             }
         }
         const minutes = Math.ceil(totalSeconds / 60);
@@ -486,8 +517,80 @@ export class SmartDAGPlanner {
      * Determine if an agent should be skipped
      */
     shouldSkipAgent(agent, features, completedAgents, failedAgents) {
-        // TODO: Implement in S3-T3.1
+        // 1. Skip if required dependency failed and agent is optional
+        const failedDeps = agent.dependencies.filter(d => failedAgents.has(d));
+        if (failedDeps.length > 0) {
+            if (agent.optional) {
+                return { skip: true, reason: `Dependency ${failedDeps[0]} failed` };
+            }
+            // Non-optional agent with failed dep - this is an error condition
+            // but we continue and let the executor handle it
+        }
+        // 2. Skip if required dependency not completed (not ready yet)
+        const pendingDeps = agent.dependencies.filter(d => !completedAgents.has(d) && !failedAgents.has(d));
+        if (pendingDeps.length > 0) {
+            return { skip: true, reason: `Waiting for dependency ${pendingDeps[0]}` };
+        }
+        // 3. Feature-based skip rules
+        const featureRequirements = {
+            'api-rest': [FEATURE_FLAGS.HAS_REST_API],
+            'api-graphql': [FEATURE_FLAGS.HAS_GRAPHQL],
+            'api-websocket': [FEATURE_FLAGS.HAS_WEBSOCKET],
+            'database': [FEATURE_FLAGS.HAS_SQL_DB, FEATURE_FLAGS.HAS_NOSQL_DB],
+            'authentication': [FEATURE_FLAGS.HAS_AUTH],
+            'authorization': [FEATURE_FLAGS.HAS_RBAC],
+            'components': [FEATURE_FLAGS.HAS_REACT, FEATURE_FLAGS.HAS_VUE, FEATURE_FLAGS.HAS_ANGULAR],
+            'state': [FEATURE_FLAGS.HAS_STATE_MGMT],
+            'routing': [FEATURE_FLAGS.HAS_ROUTING],
+        };
+        const required = featureRequirements[agent.id];
+        if (required) {
+            const hasAny = required.some(f => features.features.has(f));
+            if (!hasAny && agent.optional) {
+                return { skip: true, reason: `Missing required features: ${required.join(' or ')}` };
+            }
+        }
+        // 4. Structure-based skip rules
+        if (agent.id === 'backend-modules' && !features.structure.hasBackend) {
+            return { skip: true, reason: 'No backend structure detected' };
+        }
+        if (agent.id === 'frontend-modules' && !features.structure.hasFrontend) {
+            return { skip: true, reason: 'No frontend structure detected' };
+        }
+        if (agent.id === 'deployment' && !features.structure.hasDocker && !features.structure.hasCICD) {
+            return { skip: true, reason: 'No Docker or CI/CD detected' };
+        }
+        if (agent.id === 'cicd' && !features.structure.hasCICD) {
+            return { skip: true, reason: 'No CI/CD configuration detected' };
+        }
+        // No skip
         return { skip: false };
+    }
+    /**
+     * Filter agents based on skip rules (pre-execution filtering)
+     */
+    filterAgents(dag, features) {
+        const completedAgents = new Set();
+        const failedAgents = new Set();
+        const filteredAgents = dag.agents.filter(agent => {
+            const result = this.shouldSkipAgent(agent, features, completedAgents, failedAgents);
+            if (!result.skip) {
+                completedAgents.add(agent.id);
+                return true;
+            }
+            console.log(`[DAG] Skipping ${agent.id}: ${result.reason}`);
+            return false;
+        });
+        return {
+            ...dag,
+            agents: filteredAgents,
+            layers: this.buildLayers(filteredAgents),
+            metadata: {
+                ...dag.metadata,
+                totalAgents: filteredAgents.length,
+                optionalAgents: filteredAgents.filter(a => a.optional).length
+            }
+        };
     }
     /**
      * Validate DAG for circular dependencies and missing deps

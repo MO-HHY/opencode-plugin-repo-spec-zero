@@ -98,7 +98,7 @@ export class StructureBuilderAgent extends SubAgent {
                 data: {
                     ...result,
                     promptVersion: {
-                        id: 'structure_builder',
+                        id: 'finalizer/structure',
                         version: '1',
                         hash: 'native'
                     },

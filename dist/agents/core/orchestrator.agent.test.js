@@ -57,12 +57,12 @@ describe('RepoSpecZeroOrchestrator', () => {
             // Check DAG summary is returned
             expect(result.data?.dagSummary).toBeDefined();
             expect(result.data?.dagSummary?.totalAgents).toBeGreaterThan(0);
-            expect(result.data?.repoType).toBe('backend');
+            expect(result.data?.repoType).toBe('library');
             // Check context metadata is returned
             expect(result.data?.contextMetadata).toBeDefined();
             expect(result.data?.contextMetadata?.projectSlug).toBe(path.basename(tmpRepo));
-            // v2.0.0: Check version is returned
-            expect(result.data?.version).toBe('2.0.0');
+            // v2.1.0: Check version is returned
+            expect(result.data?.version).toBe('2.1.0');
         }
         finally {
             fs.rmSync(tmpRepo, { recursive: true, force: true });

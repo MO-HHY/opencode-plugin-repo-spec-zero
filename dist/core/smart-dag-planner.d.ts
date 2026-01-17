@@ -64,6 +64,10 @@ export declare class SmartDAGPlanner {
      */
     shouldSkipAgent(agent: PlannedAgent, features: DetectedFeatures, completedAgents: Set<string>, failedAgents: Set<string>): SkipResult;
     /**
+     * Filter agents based on skip rules (pre-execution filtering)
+     */
+    filterAgents(dag: PlannedDAG, features: DetectedFeatures): PlannedDAG;
+    /**
      * Validate DAG for circular dependencies and missing deps
      */
     validateDAG(dag: PlannedDAG): {

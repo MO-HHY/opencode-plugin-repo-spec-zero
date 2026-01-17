@@ -6,6 +6,9 @@ export { PromptLoader, createPromptLoader } from './core/prompt-loader.js';
 export { DAGExecutor, DEFAULT_DAG, GENERATION_DAG, AUDIT_DAG, selectDAG, createCustomDAG } from './core/dag-executor.js';
 export { OutputValidator, validateOutput, validateAndFix } from './core/output-validator.js';
 export { SmartDAGPlanner } from './core/smart-dag-planner.js';
+export { TemplateLoader } from './core/template-loader.js';
+// v2.1.0: Generic Analysis Agent
+export { GenericAnalysisAgent } from './agents/generic-analysis.agent.js';
 // v2.0.0: Commands
 export { analyzeCommand, applyCommand, parseAnalyzeArgs, parseApplyArgs } from './commands/index.js';
 // v2.0.0: Skills
@@ -85,7 +88,7 @@ function resultToString(result) {
 }
 const RepoSpecZeroPlugin = async (input) => {
     const { client } = input;
-    console.log('RepoSpecZero Plugin v2.0.5 Initializing with DAG execution...');
+    console.log('RepoSpecZero Plugin v2.1.0 Initializing with Smart DAG execution...');
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
     const nativeLLMSkill = new NativeLLMSkill(client);
@@ -231,7 +234,12 @@ const RepoSpecZeroPlugin = async (input) => {
                     repoUrl: z.string().describe('The Git URL of the repository to analyze (will be cloned).').optional(),
                     repoPath: z.string().describe('Absolute path to a local repository (use this OR repoUrl, not both).').optional(),
                     targetDir: z.string().describe('Directory where to clone the repo and generate output. Required when using repoUrl.').optional(),
-                    taskId: z.string().describe('Optional task ID (e.g. from ClickUp) to update progress on.').optional()
+                    taskId: z.string().describe('Optional task ID (e.g. from ClickUp) to update progress on.').optional(),
+                    // v2.1.0: New flags
+                    smartDag: z.boolean().describe('Use SmartDAGPlanner for dynamic agent selection (default: true)').optional(),
+                    diagrams: z.enum(['inline', 'standalone', 'both', 'none']).describe('Diagram output mode (default: both)').optional(),
+                    template: z.string().describe('Template ID to use for output (overrides prompt default)').optional(),
+                    skipAgents: z.array(z.string()).describe('Agent IDs to explicitly skip').optional(),
                 },
                 execute: async (params) => {
                     // Input validation to prevent undefined values propagating
@@ -239,7 +247,13 @@ const RepoSpecZeroPlugin = async (input) => {
                         repoUrl: params.repoUrl?.trim() || undefined,
                         repoPath: params.repoPath?.trim() || undefined,
                         targetDir: params.targetDir?.trim() || undefined,
-                        taskId: params.taskId?.trim() || undefined
+                        taskId: params.taskId?.trim() || undefined,
+                        // v2.1.0 flags
+                        smartDag: params.smartDag !== undefined ? params.smartDag : true,
+                        diagrams: params.diagrams || 'both',
+                        template: params.template,
+                        skipAgents: params.skipAgents || [],
+                        pluginVersion: '2.1.0'
                     };
                     // Validation: if repoUrl is provided, targetDir should also be provided
                     if (validParams.repoUrl && !validParams.targetDir) {
@@ -277,8 +291,8 @@ const RepoSpecZeroPlugin = async (input) => {
                 try {
                     await client.tui.showToast({
                         body: {
-                            title: 'RepoSpecZero v2.0.5',
-                            message: 'Spec-Zero Plugin with DAG execution is ready.',
+                            title: 'RepoSpecZero v2.1.0',
+                            message: 'Spec-Zero Plugin with Smart DAG execution is ready.',
                             variant: 'info',
                             duration: 3000,
                         },

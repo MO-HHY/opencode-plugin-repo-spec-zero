@@ -5,6 +5,8 @@ export { PromptLoader, createPromptLoader, type PromptMetadata, type LoadedPromp
 export { DAGExecutor, DEFAULT_DAG, GENERATION_DAG, AUDIT_DAG, selectDAG, createCustomDAG, type DAGNode, type DAGDefinition } from './core/dag-executor.js';
 export { OutputValidator, validateOutput, validateAndFix } from './core/output-validator.js';
 export { SmartDAGPlanner } from './core/smart-dag-planner.js';
+export { TemplateLoader } from './core/template-loader.js';
+export { GenericAnalysisAgent } from './agents/generic-analysis.agent.js';
 export { analyzeCommand, applyCommand, parseAnalyzeArgs, parseApplyArgs } from './commands/index.js';
 export { SubmoduleManager } from './skills/submodule-manager.skill.js';
 export { getSystemContext, getFullSystemContext, getSummarySystemContext } from './prompts/system-context.js';
