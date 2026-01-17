@@ -3,8 +3,8 @@
     "projectSlug": "sample-fullstack-repo",
     "repoType": "fullstack",
     "baseDir": "/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo",
-    "analysisDate": "2026-01-16T23:32:44.960Z",
-    "durationMs": 53,
+    "analysisDate": "2026-01-17T00:21:57.149Z",
+    "durationMs": 52,
     "agentsExecuted": [
       "bootstrap",
       "dependencies",
@@ -127,7 +127,7 @@
         "version": "1",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:32:44.964Z"
+      "timestamp": "2026-01-17T00:21:57.152Z"
     },
     "dependencies": {
       "agentId": "dependencies",
@@ -140,7 +140,7 @@
         "hash": "3b5ffb13"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:32:44.967Z"
+      "timestamp": "2026-01-17T00:21:57.155Z"
     },
     "overview": {
       "agentId": "overview",
@@ -153,7 +153,7 @@
         "hash": "4f77d5b2"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:32:44.967Z"
+      "timestamp": "2026-01-17T00:21:57.155Z"
     },
     "entities": {
       "agentId": "entities",
@@ -168,10 +168,10 @@
       "diagrams": [
         {
           "path": "_diagrams/analysis-entities-erd.mmd",
-          "content": "---\nuid: entities:diagram:erd\ntitle: \"Entity Relationship Diagram\"\ntype: diagram\ndiagram_type: erd\ncreated: 2026-01-16\nsource: 01-domain/entities.md\n---\n\n```mermaid\nerDiagram\n    {{name}} {\n\n    }\n```\n"
+          "content": "---\nuid: entities:diagram:erd\ntitle: \"Entity Relationship Diagram\"\ntype: diagram\ndiagram_type: erd\ncreated: 2026-01-17\nsource: 01-domain/entities.md\n---\n\n```mermaid\nerDiagram\n    {{name}} {\n\n    }\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:32:44.969Z"
+      "timestamp": "2026-01-17T00:21:57.157Z"
     },
     "architecture": {
       "agentId": "architecture",
@@ -184,7 +184,7 @@
         "hash": "bd8a8720"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:32:44.969Z"
+      "timestamp": "2026-01-17T00:21:57.157Z"
     },
     "backend-modules": {
       "agentId": "backend-modules",
@@ -199,10 +199,14 @@
       "diagrams": [
         {
           "path": "_diagrams/analysis-modules-flowchart.mmd",
-          "content": "---\nuid: backend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-16\nsource: 02-modules/backend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
+          "content": "---\nuid: backend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-17\nsource: 02-modules/backend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
+        },
+        {
+          "path": "_diagrams/backend-modules-sequence-1.mmd",
+          "content": "---\nuid: backend-modules:diagram:sequence\ntitle: \"Sequence Diagram\"\ntype: diagram\ndiagram_type: sequence\ncreated: 2026-01-17\nsource: 02-modules/backend/index.md\n---\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:32:44.970Z"
+      "timestamp": "2026-01-17T00:21:57.159Z"
     },
     "frontend-modules": {
       "agentId": "frontend-modules",
@@ -217,10 +221,14 @@
       "diagrams": [
         {
           "path": "_diagrams/analysis-modules-flowchart.mmd",
-          "content": "---\nuid: frontend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-16\nsource: 02-modules/frontend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
+          "content": "---\nuid: frontend-modules:diagram:flowchart\ntitle: \"Flow Diagram\"\ntype: diagram\ndiagram_type: flowchart\ncreated: 2026-01-17\nsource: 02-modules/frontend/index.md\n---\n\n```mermaid\nflowchart TD\n    GET__api_users[\"GET /api/users\"]\n\n```\n"
+        },
+        {
+          "path": "_diagrams/frontend-modules-sequence-1.mmd",
+          "content": "---\nuid: frontend-modules:diagram:sequence\ntitle: \"Sequence Diagram\"\ntype: diagram\ndiagram_type: sequence\ncreated: 2026-01-17\nsource: 02-modules/frontend/index.md\n---\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:32:44.970Z"
+      "timestamp": "2026-01-17T00:21:57.159Z"
     },
     "database": {
       "agentId": "database",
@@ -233,7 +241,7 @@
         "hash": "e0f6f86b"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:32:44.970Z"
+      "timestamp": "2026-01-17T00:21:57.159Z"
     },
     "api-rest": {
       "agentId": "api-rest",
@@ -246,7 +254,7 @@
         "hash": "a4d7ac10"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:32:44.974Z"
+      "timestamp": "2026-01-17T00:21:57.161Z"
     },
     "components": {
       "agentId": "components",
@@ -259,19 +267,20 @@
         "hash": "24105529"
       },
       "diagrams": [],
-      "timestamp": "2026-01-16T23:32:44.974Z"
+      "timestamp": "2026-01-17T00:21:57.161Z"
     },
     "summary": {
       "agentId": "summary",
       "filePath": "/Users/mohamedouassif/Documents/GitHub/Github_MO-HHY_WorkDirectory/repos/00__Plugin-SPEC-OS/opencode-plugin-repo-spec-zero/test/__fixtures__/sample-fullstack-repo/sample-fullstack-repo-spec/SUMMARY.md",
       "summary": "\n# Generic Analysis\nAnalysis content for ",
-      "fullContent": "---\nuid: sample-fullstack-repo:spec:summary\ntitle: \"sample-fullstack-repo - Analysis Summary\"\nstatus: draft\nversion: 1.0.0\ncreated: 2026-01-16\nprompt_version: summary@v1\nedges:\n  - [[sample-fullstack-repo:spec:bootstrap|summarizes]]\n  - [[sample-fullstack-repo:spec:dependencies|summarizes]]\n  - [[sample-fullstack-repo:spec:overview|summarizes]]\n  - [[sample-fullstack-repo:spec:entities|summarizes]]\n  - [[sample-fullstack-repo:spec:architecture|summarizes]]\n  - [[sample-fullstack-repo:spec:backend-modules|summarizes]]\n  - [[sample-fullstack-repo:spec:frontend-modules|summarizes]]\n  - [[sample-fullstack-repo:spec:database|summarizes]]\n  - [[sample-fullstack-repo:spec:api-rest|summarizes]]\n  - [[sample-fullstack-repo:spec:components|summarizes]]\ntags:\n  - spec\n  - summary\n  - executive\n---\n\n# Generic Analysis\nAnalysis content for ",
+      "fullContent": "---\nuid: sample-fullstack-repo:spec:summary\ntitle: \"sample-fullstack-repo - Analysis Summary\"\nstatus: draft\nversion: 1.0.0\ncreated: 2026-01-17\nprompt_version: summary@v1\nedges:\n  - [[sample-fullstack-repo:spec:bootstrap|summarizes]]\n  - [[sample-fullstack-repo:spec:dependencies|summarizes]]\n  - [[sample-fullstack-repo:spec:overview|summarizes]]\n  - [[sample-fullstack-repo:spec:entities|summarizes]]\n  - [[sample-fullstack-repo:spec:architecture|summarizes]]\n  - [[sample-fullstack-repo:spec:backend-modules|summarizes]]\n  - [[sample-fullstack-repo:spec:frontend-modules|summarizes]]\n  - [[sample-fullstack-repo:spec:database|summarizes]]\n  - [[sample-fullstack-repo:spec:api-rest|summarizes]]\n  - [[sample-fullstack-repo:spec:components|summarizes]]\ntags:\n  - spec\n  - summary\n  - executive\n---\n\n# Generic Analysis\nAnalysis content for ",
       "promptVersion": {
         "id": "analysis/summary",
         "version": "1",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:32:44.975Z"
+      "diagrams": [],
+      "timestamp": "2026-01-17T00:21:57.162Z"
     },
     "services": {
       "agentId": "services",
@@ -286,10 +295,10 @@
       "diagrams": [
         {
           "path": "_diagrams/integration-detect-services-sequence.mmd",
-          "content": "---\nuid: services:diagram:sequence\ntitle: \"Sequence Diagram\"\ntype: diagram\ndiagram_type: sequence\ncreated: 2026-01-16\nsource: 06-integration/services.md\n---\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n"
+          "content": "---\nuid: services:diagram:sequence\ntitle: \"Sequence Diagram\"\ntype: diagram\ndiagram_type: sequence\ncreated: 2026-01-17\nsource: 06-integration/services.md\n---\n\n```mermaid\nsequenceDiagram\n  Client->>Server: GET /api/users\n```\n"
         }
       ],
-      "timestamp": "2026-01-16T23:32:44.975Z"
+      "timestamp": "2026-01-17T00:21:57.162Z"
     },
     "structure_builder": {
       "agentId": "structure_builder",
@@ -301,19 +310,19 @@
         "version": "1",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:32:44.975Z"
+      "timestamp": "2026-01-17T00:21:57.162Z"
     },
     "write_specs": {
       "agentId": "write_specs",
       "filePath": "",
       "summary": "## Write Specs Summary",
-      "fullContent": "## Write Specs Summary\n\n**Project:** sample-fullstack-repo\n**Version:** 1.0.0 (Initial Generation)\n**Files Written:** 15\n\n### Generated Files\n\n- `_generated/06-integration/dependencies.md`\n- `_generated/00-foundation/overview.md`\n- `_generated/01-domain/entities.md`\n- `_generated/00-foundation/architecture.md`\n- `_generated/02-modules/backend/index.md`\n- `_generated/02-modules/frontend/index.md`\n- `_generated/04-data/database.md`\n- `_generated/03-api/rest.md`\n- `_generated/02-modules/frontend/components.md`\n- `_generated/06-integration/services.md`\n- `_generated/_diagrams/analysis-entities-erd.mmd`\n- `_generated/_diagrams/analysis-modules-flowchart.mmd`\n- `_generated/_diagrams/analysis-modules-flowchart.mmd`\n- `_generated/_diagrams/integration-detect-services-sequence.mmd`\n- `_generated/index.md`\n\n### Next Steps\n\nThe specs have been written to the `_generated/` folder. \nThe commit-push agent will now commit and push these changes.\n\nAfter this initial generation, subsequent `analyze` runs will operate in \n**AUDIT mode**, generating only an AUDIT_REPORT.md without modifying existing specs.",
+      "fullContent": "## Write Specs Summary\n\n**Project:** sample-fullstack-repo\n**Version:** 1.0.0 (Initial Generation)\n**Files Written:** 17\n\n### Generated Files\n\n- `_generated/06-integration/dependencies.md`\n- `_generated/00-foundation/overview.md`\n- `_generated/01-domain/entities.md`\n- `_generated/00-foundation/architecture.md`\n- `_generated/02-modules/backend/index.md`\n- `_generated/02-modules/frontend/index.md`\n- `_generated/04-data/database.md`\n- `_generated/03-api/rest.md`\n- `_generated/02-modules/frontend/components.md`\n- `_generated/06-integration/services.md`\n- `_generated/_diagrams/analysis-entities-erd.mmd`\n- `_generated/_diagrams/analysis-modules-flowchart.mmd`\n- `_generated/_diagrams/backend-modules-sequence-1.mmd`\n- `_generated/_diagrams/analysis-modules-flowchart.mmd`\n- `_generated/_diagrams/frontend-modules-sequence-1.mmd`\n- `_generated/_diagrams/integration-detect-services-sequence.mmd`\n- `_generated/index.md`\n\n### Next Steps\n\nThe specs have been written to the `_generated/` folder. \nThe commit-push agent will now commit and push these changes.\n\nAfter this initial generation, subsequent `analyze` runs will operate in \n**AUDIT mode**, generating only an AUDIT_REPORT.md without modifying existing specs.",
       "promptVersion": {
         "id": "finalizer/write",
         "version": "2",
         "hash": "native"
       },
-      "timestamp": "2026-01-16T23:32:45.012Z"
+      "timestamp": "2026-01-17T00:21:57.200Z"
     }
   }
 }

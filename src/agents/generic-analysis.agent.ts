@@ -280,10 +280,22 @@ export class GenericAnalysisAgent extends SubAgent {
     ): Promise<{ contentWithDiagrams: string; standaloneDiagrams: StandaloneDiagram[] }> {
         let contentWithDiagrams = content;
         const standaloneDiagrams: StandaloneDiagram[] = [];
+        const processedTypes = new Set<DiagramType>();
 
+        // 1. Process requested diagrams
         for (const instruction of instructions) {
-            // Try to extract existing diagram from content
-            let diagramContent = this.extractMermaidDiagram(content, instruction.type);
+            // Try to extract existing diagram from content using DiagramGenerator if available
+            let diagramContent: string | null = null;
+            
+            if (this.diagramGenerator) {
+                const extracted = this.diagramGenerator.extractDiagrams(content, instruction.type);
+                if (extracted.length > 0) {
+                    diagramContent = extracted[0].content;
+                }
+            } else {
+                // Fallback to internal extractor if DiagramGenerator not provided
+                diagramContent = this.extractMermaidDiagram(content, instruction.type);
+            }
 
             // If not found and generator is available, try to generate it
             if (!diagramContent && this.diagramGenerator) {
@@ -311,12 +323,33 @@ export class GenericAnalysisAgent extends SubAgent {
                     path: `_diagrams/${instruction.outputFile}`,
                     content: this.wrapWithFrontmatter(diagramContent, instruction),
                 });
+                processedTypes.add(instruction.type);
             }
 
             // If diagram should be inline but isn't present, add placeholder
             if (instruction.inline && !contentWithDiagrams.includes(`## ${this.getDiagramTitle(instruction.type)}`)) {
                 contentWithDiagrams += `\n\n## ${this.getDiagramTitle(instruction.type)}\n\n`;
                 contentWithDiagrams += `> Diagram: ${instruction.description}\n`;
+            }
+        }
+
+        // 2. Extra task: Extract ANY other existing mermaid diagrams not explicitly requested
+        if (this.diagramGenerator) {
+            const allExtracted = this.diagramGenerator.extractDiagrams(content);
+            for (const diag of allExtracted) {
+                if (!processedTypes.has(diag.type)) {
+                    // It's an unrequested but existing diagram, save it standalone too
+                    const fileName = `${this.id}-${diag.type}-${standaloneDiagrams.length}.mmd`;
+                    standaloneDiagrams.push({
+                        path: `_diagrams/${fileName}`,
+                        content: this.wrapWithFrontmatter(diag.content, {
+                            type: diag.type,
+                            description: `Extracted ${diag.type} diagram`,
+                            outputFile: fileName,
+                            inline: false
+                        }),
+                    });
+                }
             }
         }
 

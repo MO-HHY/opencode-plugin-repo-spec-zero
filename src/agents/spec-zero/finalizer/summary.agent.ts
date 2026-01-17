@@ -13,6 +13,7 @@ import type { AgentContext, AgentResult, PromptVersion } from '../../../types.js
 import type { SharedContext } from '../../../core/context.js';
 import { getSummarySystemContext } from '../../../prompts/system-context.js';
 import { generateFrontmatter, type SpecOSFrontmatter } from '../../../prompts/output-schema.js';
+import { DiagramGenerator } from '../../../core/diagram-generator.js';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -72,17 +73,38 @@ export class SummaryAgent extends SubAgent {
 
             let summaryContent = result.data;
 
-            // 5. Ensure frontmatter
+            // 5. Sanitize and extract diagrams
+            const diagramGenerator = new DiagramGenerator();
+            summaryContent = diagramGenerator.sanitizeAllDiagrams(summaryContent);
+            const extractedDiagrams = diagramGenerator.extractDiagrams(summaryContent);
+            
+            const standaloneDiagrams = extractedDiagrams.map((diag, index) => ({
+                path: `_diagrams/summary-${diag.type}-${index}.mmd`,
+                content: this.wrapDiagramWithFrontmatter(diag.content, diag.type, projectSlug)
+            }));
+
+            // 6. Ensure frontmatter
             summaryContent = this.ensureFrontmatter(summaryContent, projectSlug, sharedContext);
 
-            // 6. Write output
+            // 7. Write output
             const specDir = path.join(baseDir, `${projectSlug}-spec`);
             const fullPath = path.join(specDir, 'SUMMARY.md');
             
             fs.mkdirSync(specDir, { recursive: true });
             fs.writeFileSync(fullPath, summaryContent);
 
-            // 7. Also create index.md as navigation
+            // 8. Write standalone diagrams
+            const diagramsDir = path.join(specDir, '_generated', '_diagrams');
+            if (standaloneDiagrams.length > 0) {
+                fs.mkdirSync(diagramsDir, { recursive: true });
+                for (const diag of standaloneDiagrams) {
+                    const standalonePath = path.join(specDir, '_generated', diag.path);
+                    fs.mkdirSync(path.dirname(standalonePath), { recursive: true });
+                    fs.writeFileSync(standalonePath, diag.content);
+                }
+            }
+
+            // 9. Also create index.md as navigation
             const indexContent = this.generateIndex(projectSlug, sharedContext);
             fs.writeFileSync(path.join(specDir, 'index.md'), indexContent);
 
@@ -98,11 +120,11 @@ export class SummaryAgent extends SubAgent {
                     output: summaryContent,
                     path: fullPath,
                     summary: this.extractExecutiveSummary(summaryContent),
+                    diagrams: standaloneDiagrams,
                     promptVersion
                 },
                 message: 'Summary generation complete'
             };
-
         } catch (error: any) {
             return { success: false, message: `Summary agent failed: ${error.message}` };
         }
@@ -158,7 +180,7 @@ export class SummaryAgent extends SubAgent {
         summaries: Map<string, string>,
         sharedContext: SharedContext | undefined
     ): string {
-        let prompt = '## Analysis Results from All Agents\n\n';
+        let prompt = '## Collected Analysis Results\n\n';
 
         // Add each agent's summary
         for (const [agentId, summary] of summaries) {
@@ -168,19 +190,15 @@ export class SummaryAgent extends SubAgent {
         // Add metadata if available
         if (sharedContext) {
             const metadata = sharedContext.generateMetadata();
-            prompt += `\n## Analysis Metadata\n`;
+            prompt += `\n## Execution Metadata\n`;
             prompt += `- Agents executed: ${(metadata as any).agentsExecuted?.length || 0}\n`;
-            prompt += `- Duration: ${Math.round(((metadata as any).durationMs || 0) / 1000)}s\n`;
+            prompt += `- Total duration: ${Math.round(((metadata as any).durationMs || 0) / 1000)}s\n`;
             prompt += `- Key files analyzed: ${(metadata as any).keyFilesLoaded?.length || 0}\n`;
         }
 
-        prompt += `\n## Task\n`;
-        prompt += `Create a comprehensive executive summary that:\n`;
-        prompt += `1. Synthesizes all findings into a cohesive overview\n`;
-        prompt += `2. Highlights the most important architectural decisions\n`;
-        prompt += `3. Identifies cross-cutting concerns and patterns\n`;
-        prompt += `4. Provides a Mermaid architecture diagram\n`;
-        prompt += `5. Lists key recommendations or next steps\n`;
+        prompt += `\n## Instructions\n`;
+        prompt += `Using the collected results above, generate the Executive Summary following the system instructions. Ensure the Tech Stack table is accurate based on the findings, and the Architecture Diagram uses valid Mermaid syntax (avoiding common errors like --|->).\n`;
+        prompt += `DO NOT use filler phrases. Start directly with the # Executive Summary heading.\n`;
 
         return prompt;
     }
@@ -365,5 +383,25 @@ created: ${today}
     private extractExecutiveSummary(content: string): string {
         const match = content.match(/## Executive Summary\n([\s\S]*?)(?=\n##|$)/);
         return match ? match[1].trim().slice(0, 500) : content.slice(0, 500);
+    }
+
+    /**
+     * Wrap diagram with frontmatter for standalone saving
+     */
+    private wrapDiagramWithFrontmatter(content: string, type: string, projectSlug: string): string {
+        const today = new Date().toISOString().split('T')[0];
+        return `---
+uid: ${projectSlug}:diagram:summary:${type}
+title: "Summary ${type.toUpperCase()} Diagram"
+type: diagram
+diagram_type: ${type}
+created: ${today}
+source: SUMMARY.md
+---
+
+\`\`\`mermaid
+${content}
+\`\`\`
+`;
     }
 }

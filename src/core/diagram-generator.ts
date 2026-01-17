@@ -28,22 +28,139 @@ export class DiagramGenerator {
         analysisContent: string,
         context: AgentContext
     ): Promise<GeneratedDiagram | null> {
+        // 1. First try to extract existing diagram of this type from content
+        const existing = this.extractDiagrams(analysisContent, type);
+        if (existing.length > 0) {
+            return existing[0];
+        }
+
+        // 2. Otherwise generate from scratch using extractors
+        let generated: GeneratedDiagram | null = null;
         switch (type) {
             case 'erd':
-                return this.generateERD(analysisContent, context);
+                generated = await this.generateERD(analysisContent, context);
+                break;
             case 'sequence':
-                return this.generateSequence(analysisContent, context);
+                generated = await this.generateSequence(analysisContent, context);
+                break;
             case 'flowchart':
-                return this.generateFlowchart(analysisContent, context);
+                generated = await this.generateFlowchart(analysisContent, context);
+                break;
             case 'classDiagram':
-                return this.generateClassDiagram(analysisContent, context);
+                generated = await this.generateClassDiagram(analysisContent, context);
+                break;
             case 'stateDiagram':
-                return this.generateStateDiagram(analysisContent, context);
+                generated = await this.generateStateDiagram(analysisContent, context);
+                break;
             case 'c4':
-                return this.generateC4(analysisContent, context);
+                generated = await this.generateC4(analysisContent, context);
+                break;
             default:
                 return null;
         }
+
+        if (generated) {
+            generated.content = this.sanitizeMermaid(generated.content);
+            if (!this.validateMermaid(generated.content)) {
+                return null;
+            }
+        }
+
+        return generated;
+    }
+
+    /**
+     * Extracts all Mermaid diagrams from content
+     */
+    extractDiagrams(content: string, filterType?: DiagramType): GeneratedDiagram[] {
+        const diagrams: GeneratedDiagram[] = [];
+        const regex = /```mermaid\n([\s\S]*?)```/g;
+        let match;
+
+        while ((match = regex.exec(content)) !== null) {
+            let diagramContent = match[1].trim();
+            const type = this.detectDiagramType(diagramContent);
+            
+            if (type && (!filterType || type === filterType)) {
+                diagramContent = this.sanitizeMermaid(diagramContent);
+                if (this.validateMermaid(diagramContent)) {
+                    diagrams.push({
+                        type,
+                        content: diagramContent,
+                        outputFile: `${type}-${diagrams.length}.mmd`, // Default name, will be overridden
+                        inline: true
+                    });
+                }
+            }
+        }
+
+        return diagrams;
+    }
+
+    /**
+     * Detects diagram type from Mermaid content
+     */
+    private detectDiagramType(content: string): DiagramType | null {
+        const typePatterns: Record<string, RegExp> = {
+            sequence: /^sequenceDiagram/i,
+            flowchart: /^flowchart|^graph/i,
+            erd: /^erDiagram/i,
+            classDiagram: /^classDiagram/i,
+            stateDiagram: /^stateDiagram/i,
+            c4: /^C4/i,
+            gantt: /^gantt/i,
+            pie: /^pie/i,
+        };
+
+        for (const [type, pattern] of Object.entries(typePatterns)) {
+            if (pattern.test(content.trim())) {
+                return type as DiagramType;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds and sanitizes all Mermaid blocks in a text
+     */
+    sanitizeAllDiagrams(text: string): string {
+        const regex = /(```mermaid\n)([\s\S]*?)(```)/g;
+        return text.replace(regex, (match, start, content, end) => {
+            return `${start}${this.sanitizeMermaid(content)}${end}`;
+        });
+    }
+
+    /**
+     * Corrects common Mermaid syntax errors
+     */
+    sanitizeMermaid(content: string): string {
+        if (!content) return '';
+
+        let sanitized = content;
+
+        // 1. Fix common arrow errors
+        sanitized = sanitized.replace(/--\|->/g, '-->');
+        sanitized = sanitized.replace(/--\\>/g, '-->');
+        sanitized = sanitized.replace(/->\|/g, '-->|');
+        sanitized = sanitized.replace(/-[\\|]>/g, '->');
+        
+        // 2. Fix flowchart link text if not in quotes and contains special chars
+        // e.g. -->|some text| B  =>  -- "some text" --> B
+        // sanitized = sanitized.replace(/--\s*\|([^|"]+)\|\s*-->/g, ' -- "$1" --> ');
+
+        // 3. Fix sequence diagram activation if missing space
+        sanitized = sanitized.replace(/activate([a-zA-Z0-9_]+)/g, 'activate $1');
+        sanitized = sanitized.replace(/deactivate([a-zA-Z0-9_]+)/g, 'deactivate $1');
+
+        // 4. Fix ERD cardinality common errors
+        sanitized = sanitized.replace(/\}--\|\|/g, '}o--||');
+        sanitized = sanitized.replace(/\|\|--\{/g, '||--o{');
+
+        // 5. Remove any trailing backslashes at end of lines
+        sanitized = sanitized.split('\n').map(line => line.replace(/\\$/, '')).join('\n');
+
+        return sanitized;
     }
 
     /**

@@ -3,7 +3,7 @@ uid: sample-fullstack-repo:spec:index
 title: "sample-fullstack-repo Specifications"
 status: draft
 version: 1.0.0
-created: 2026-01-16
+created: 2026-01-17
 prompt_version: index@v2
 
 tags:
@@ -17,7 +17,7 @@ tags:
 
 - **Name:** sample-fullstack-repo
 - **Type:** Fullstack Application
-- **Generated:** 2026-01-16
+- **Generated:** 2026-01-17
 - **Specs Version:** 1.0.0
 
 ## Generated Specifications

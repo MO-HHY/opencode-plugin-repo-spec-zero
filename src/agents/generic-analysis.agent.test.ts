@@ -17,6 +17,7 @@ const mockTemplateLoader = {
 
 const mockDiagramGenerator = {
     generate: vi.fn(),
+    extractDiagrams: vi.fn().mockReturnValue([]),
 };
 
 describe('GenericAnalysisAgent', () => {
@@ -35,6 +36,7 @@ describe('GenericAnalysisAgent', () => {
 
     beforeEach(() => {
         vi.resetAllMocks();
+        mockDiagramGenerator.extractDiagrams.mockReturnValue([]);
         agent = new GenericAnalysisAgent(
             mockConfig,
             mockRouter as any,

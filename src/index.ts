@@ -102,7 +102,7 @@ function resultToString(result: any): string {
 
 const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
     const { client } = input;
-    console.log('RepoSpecZero Plugin v2.1.0 Initializing with Smart DAG execution...');
+    console.log('RepoSpecZero Plugin v2.1.1 Initializing with Smart DAG execution...');
 
     // 1. Initialize Skills
     const detectionSkill = new SpecZeroDetectionSkill();
@@ -343,7 +343,7 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
                 try {
                     await client.tui.showToast({
                         body: {
-                            title: 'RepoSpecZero v2.1.0',
+                            title: 'RepoSpecZero v2.1.1',
                             message: 'Spec-Zero Plugin with Smart DAG execution is ready.',
                             variant: 'info',
                             duration: 3000,

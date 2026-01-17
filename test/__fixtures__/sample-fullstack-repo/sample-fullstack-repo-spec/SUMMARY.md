@@ -3,7 +3,7 @@ uid: sample-fullstack-repo:spec:summary
 title: "sample-fullstack-repo - Analysis Summary"
 status: draft
 version: 1.0.0
-created: 2026-01-16
+created: 2026-01-17
 prompt_version: summary@v1
 edges:
   - [[sample-fullstack-repo:spec:bootstrap|summarizes]]

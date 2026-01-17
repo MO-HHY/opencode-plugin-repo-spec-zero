@@ -14,6 +14,22 @@ export declare class DiagramGenerator {
      */
     generate(type: DiagramType, analysisContent: string, context: AgentContext): Promise<GeneratedDiagram | null>;
     /**
+     * Extracts all Mermaid diagrams from content
+     */
+    extractDiagrams(content: string, filterType?: DiagramType): GeneratedDiagram[];
+    /**
+     * Detects diagram type from Mermaid content
+     */
+    private detectDiagramType;
+    /**
+     * Finds and sanitizes all Mermaid blocks in a text
+     */
+    sanitizeAllDiagrams(text: string): string;
+    /**
+     * Corrects common Mermaid syntax errors
+     */
+    sanitizeMermaid(content: string): string;
+    /**
      * Entity Relationship Diagram Generator
      */
     private generateERD;

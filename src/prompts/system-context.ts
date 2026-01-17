@@ -76,30 +76,44 @@ Use SPEC-OS format with YAML frontmatter.
  * System context for the summary/finalizer agent
  */
 export function getSummarySystemContext(projectSlug: string, repoType: string): string {
-    return `# Summary Agent Context
+    return `# Executive Summary Specialist
 
-You are the finalizer agent for the **${projectSlug}** (${repoType}) analysis.
+You are the finalizer agent for the **${projectSlug}** (${repoType}) analysis. Your goal is to produce a high-level, professional executive summary for stakeholders and developers.
 
 ## Your Role
-- Consolidate all previous agent outputs into an executive summary
-- Identify cross-cutting patterns and concerns
-- Highlight the most important findings
-- Create a navigable index of all analysis sections
+- Synthesize all technical findings into a cohesive, professional overview.
+- Eliminate redundant or low-level details, focusing on "The Big Picture".
+- Maintain a formal, analytical tone. Avoid informal phrases like "The final answer is" or "Here is what I found".
 
-## Output Requirements
-- Executive summary (3-5 paragraphs)
-- Technology stack summary table
-- Key findings list
-- Architecture diagram (Mermaid)
-- Navigation links to all sections
+## Output Structure Requirements
+Your output MUST follow this exact structure:
+
+1. # Executive Summary
+   - A high-level overview of the project's purpose and state (3-5 paragraphs).
+
+2. ## Key Findings
+   - A bulleted list of the most critical architectural and functional discoveries.
+
+3. ## Tech Stack
+   - A markdown table summarizing languages, frameworks, databases, and key tools found.
+
+4. ## Architecture Overview
+   - A valid Mermaid diagram (C4Context or flowchart) showing the system's high-level components.
+
+5. ## Next Steps
+   - Strategic recommendations for further development or analysis.
+
+6. ## Navigation
+   - A list of links to the detailed analysis sections.
 
 ## Input
-You will receive summaries from all previous agents. Synthesize these into a cohesive overview.
+You will receive summaries from all specialized agents that analyzed the codebase. Use them as evidence for your synthesis.
 
 ---
 
 `;
 }
+
 
 /**
  * Repo-type specific context additions

@@ -3347,3 +3347,19 @@ SPRINT 2 (Prompt Registry) ───┬──→ SPRINT 3 (DAG) ───┐    
 
 > **Nota:** Questo file è la fonte di verità per lo stato del progetto.
 > Aggiornare dopo ogni completamento task o cambio di stato.
+
+## 🏁 Post-Sprint Improvements (2026-01-17)
+
+### Quality Improvements v2.1.0-patch1
+
+| Task ID | Titolo | Status | Descrizione |
+|---------|--------|--------|-------------|
+| Q-T1 | DiagramGenerator Extraction | ✅ | Migliorata estrazione blocchi mermaid e salvataggio standalone |
+| Q-T2 | Professional Summary Prompt | ✅ | Refactoring summary agent per executive summary strutturato |
+| Q-T3 | Mermaid Sanitization | ✅ | Implementata funzione sanitizeMermaid per correggere errori comuni |
+
+**Dettagli:**
+- Migliorato `DiagramGenerator` per rilevare e validare diagrammi esistenti nell'output LLM.
+- `GenericAnalysisAgent` ora salva tutti i diagrammi trovati (anche extra) in `_diagrams/`.
+- Aggiornato `getSummarySystemContext` per imporre una struttura professionale (Summary, Findings, Tech Stack, Architecture, Next Steps).
+- Aggiunta pulizia automatica di errori comuni di sintassi Mermaid (es. `--|->`, `--\>`, activation/deactivation spacing).

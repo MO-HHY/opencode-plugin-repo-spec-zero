@@ -52,5 +52,9 @@ export declare class SummaryAgent extends SubAgent {
      * Extract executive summary from content
      */
     private extractExecutiveSummary;
+    /**
+     * Wrap diagram with frontmatter for standalone saving
+     */
+    private wrapDiagramWithFrontmatter;
 }
 //# sourceMappingURL=summary.agent.d.ts.map

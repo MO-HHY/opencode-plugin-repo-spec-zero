@@ -71,7 +71,16 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             projectSlug = this.getSlug(repoUrl);
             // targetDir is where we create the project folder
             const resolvedTargetDir = path.resolve(targetDir);
-            workDir = path.join(resolvedTargetDir, projectSlug);
+            // v2.1.1: Avoid path duplication - check if targetDir already ends with projectSlug
+            const targetDirBasename = path.basename(resolvedTargetDir);
+            if (targetDirBasename === projectSlug) {
+                // targetDir already includes the project name, use it directly
+                workDir = resolvedTargetDir;
+            }
+            else {
+                // targetDir is a parent folder, append projectSlug
+                workDir = path.join(resolvedTargetDir, projectSlug);
+            }
             // Ensure targetDir exists
             if (!fs.existsSync(resolvedTargetDir)) {
                 await this.notify(client, `Creating target directory: ${resolvedTargetDir}`);
