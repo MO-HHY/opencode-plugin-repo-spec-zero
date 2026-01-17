@@ -130,19 +130,19 @@ npx repo-spec-zero analyze . --skipAgents overview,architecture
 
 ## Architecture v2.1.0
 
-The plugin uses a **Modular Smart Swarm** architecture:
+The plugin uses a **100% Generic Modular Smart Swarm** architecture. All specialized legacy agents have been replaced by a single, highly configurable `GenericAnalysisAgent` that adapts its behavior based on external prompts and templates.
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│ Feature         │───>│ Smart DAG        │───>│ Generic         │
-│ Detector        │    │ Planner          │    │ Analysis Agent  │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│ Feature         │───>│ Smart DAG        │───>│ Generic Analysis │
+│ Detector        │    │ Planner          │    │ Agent (DRIVEN)   │
+└─────────────────┘    └──────────────────┘    └──────────────────┘
         │                      │                       │
         v                      v                       v
-  Detects:               Builds:                 Uses:
-  - Frameworks           - Execution layers      - Prompt Registry
-  - Languages            - Agent dependencies    - Template Loader
-  - Features (24+)       - Skip conditions       - Diagram Generator
+  Detects:               Builds:                 Loads:
+  - Frameworks           - Execution layers      - Registry Prompts
+  - Languages            - Agent dependencies    - MD Templates
+  - Features (24+)       - Skip conditions       - Mermaid Diagrams
 ```
 
 ### Core Components

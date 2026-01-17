@@ -3272,21 +3272,41 @@ Documentare tutti i cambiamenti v2.1.0:
 
 ---
 
+## 📋 SPRINT 7: Final Cleanup & Regression (DETTAGLIO ATOMICO)
+
+**Status:** 🟡 IN PROGRESS
+**Goal:** Elimina file obsoleti, aggiorna documentazione e verifica finale suite test
+**Effort Totale:** ~4h
+**Dipendenze:** Sprint 6 ✅
+
+### Riepilogo Sprint 7
+
+| Task ID | Titolo | Effort | Agent | Status |
+|---------|--------|--------|-------|--------|
+| S7-T1.1 | Eliminazione 18 file obsoleti spec-zero | 1h | coder-fullstack | ✅ completed |
+| S7-T2.1 | Aggiornamento README.md architettura generica | 1h | coder-fullstack | ✅ completed |
+| S7-T3.1 | Esecuzione suite regression (51 test) | 2h | tester | ✅ completed |
+
+---
+
 ## 📈 Dipendenze tra Sprint
 
 ```
 SPRINT 1 (Foundation) ─────────────────────────────────────┐
                                                            │
 SPRINT 2 (Prompt Registry) ───┬──→ SPRINT 3 (DAG) ───┐     │
-                              │                       │     │
-                              │                       ▼     ▼
-                              └──────────────→ SPRINT 4 (Agent + Templates)
-                                                      │
-                                                      ▼
-                                              SPRINT 5 (Diagrams + Prompts)
-                                                      │
-                                                      ▼
-                                              SPRINT 6 (CLI + Validation)
+                               │                       │     │
+                               │                       ▼     ▼
+                               └──────────────→ SPRINT 4 (Agent + Templates)
+                                                       │
+                                                       ▼
+                                               SPRINT 5 (Diagrams + Prompts)
+                                                       │
+                                                       ▼
+                                               SPRINT 6 (CLI + Validation)
+                                                       │
+                                                       ▼
+                                               SPRINT 7 (Cleanup) ✅
 ```
 
 ---
@@ -3309,6 +3329,9 @@ SPRINT 2 (Prompt Registry) ───┬──→ SPRINT 3 (DAG) ───┐    
 | 2026-01-17 | S6 | /start-sprint S6 | Sprint 6 iniziato (CLI & Validation), 17 subtask atomiche aggiunte (S6-T1.1 a S6-T4.3) |
 | 2026-01-17 | S6 | Wave 1 INIZIATA | Assegnati S6-T1.1, S6-T2.1, S6-T3.1 |
 | 2026-01-17 | S6 | Wave 1 COMPLETATA | Tipi CLI, Fixture repo, Manifest Validator implementati |
+| 2026-01-17 | S7 | /start-sprint S7 | Sprint 7 iniziato (Cleanup & Regression) |
+| 2026-01-17 | S7 | Sprint 7 COMPLETATO | Eliminati 18 agenti obsoleti, README aggiornato, 51 test passanti |
+
 | 2026-01-17 | S6 | Sprint 6 COMPLETATO | CLI v2.1.0, E2E pipeline validation, Manifest validation/repair, Docs updated |
 | 2026-01-17 | - | UPGRADE v2.1.0 COMPLETATO | Sistema modulare, Smart DAG, Mermaid diagrams, Template system |
 
@@ -3363,3 +3386,409 @@ SPRINT 2 (Prompt Registry) ───┬──→ SPRINT 3 (DAG) ───┐    
 - `GenericAnalysisAgent` ora salva tutti i diagrammi trovati (anche extra) in `_diagrams/`.
 - Aggiornato `getSummarySystemContext` per imporre una struttura professionale (Summary, Findings, Tech Stack, Architecture, Next Steps).
 - Aggiunta pulizia automatica di errori comuni di sintassi Mermaid (es. `--|->`, `--\>`, activation/deactivation spacing).
+
+---
+
+## 📋 SPRINT-021: Migration v2.1 - Elimination of Technical Debt v2.0
+
+**Status:** 🔵 READY
+**Goal:** Complete elimination of specialized agents (v2.0) and full unification under GenericAnalysisAgent with prompt-driven behavior.
+**Effort Totale:** ~36h (effettivo ~18h con parallelizzazione)
+**Dipendenze:** Sprint 6 COMPLETATO ✅
+**Target Version:** 2.2.0
+
+### Branch Strategy
+- **Main branch**: `feature/migration-v2.1-cleanup`
+- **Created from**: `main`
+- **Target version**: `2.2.0`
+
+---
+
+### ID MAPPING: Old Agent IDs -> New Prompt IDs
+
+#### Core Analysis Agents
+
+| v2.0 Agent Class | v2.0 ID | v2.1 ID | New Prompt Path | Output File |
+|------------------|---------|---------|-----------------|-------------|
+| `OverviewAgent` | `overview` | `overview` | `analysis/overview` | `00-foundation/overview.md` |
+| `ModuleAgent` | `module` | `backend-modules` / `frontend-modules` | `analysis/modules` | `02-modules/{type}/index.md` |
+| `EntityAgent` | `entity` | `entities` | `analysis/entities` | `01-domain/entities.md` |
+
+#### Data Layer Agents
+
+| v2.0 Agent Class | v2.0 ID | v2.1 ID | New Prompt Path | Output File |
+|------------------|---------|---------|-----------------|-------------|
+| `DbAgent` | `db` | `database` | `data/detect-schema` | `04-data/database.md` |
+| `DataMapAgent` | `data_map` | `data-mapping` | `data/detect-mapping` | `04-data/data-mapping.md` |
+| `EventAgent` | `event` | `events` | `data/detect-events` | `04-data/events.md` |
+
+#### Integration Agents
+
+| v2.0 Agent Class | v2.0 ID | v2.1 ID | New Prompt Path | Output File |
+|------------------|---------|---------|-----------------|-------------|
+| `ApiAgent` | `api` | `api-rest` | `api/detect-endpoints` | `03-api/rest.md` |
+| `DependencyAgent` | `dependency` | `dependencies` | `integration/dependencies` | `06-integration/dependencies.md` |
+| `ServiceDepAgent` | `service_dep` | `services` | `integration/detect-services` | `06-integration/services.md` |
+
+#### Security Agents
+
+| v2.0 Agent Class | v2.0 ID | v2.1 ID | New Prompt Path | Output File |
+|------------------|---------|---------|-----------------|-------------|
+| `AuthAgent` | `auth` | `authentication` | `auth/detect-auth` | `05-auth/authentication.md` |
+| `AuthzAgent` | `authz` | `authorization` | `auth/detect-authz` | `05-auth/authorization.md` |
+| `SecurityAgent` | `security` | `security` | `analysis/security-audit` | `05-auth/security.md` |
+| `PromptSecAgent` | `prompt_sec` | `prompt-security` | `security/prompt-injection` | `05-auth/prompt-security.md` |
+
+#### Ops Agents
+
+| v2.0 Agent Class | v2.0 ID | v2.1 ID | New Prompt Path | Output File |
+|------------------|---------|---------|-----------------|-------------|
+| `DeploymentAgent` | `deployment` | `deployment` | `ops/deployment` | `07-ops/deployment.md` |
+| `MonitorAgent` | `monitor` | `monitoring` | `ops/monitoring` | `07-ops/monitoring.md` |
+| `MlAgent` | `ml` | `ml-services` | `ops/ml-services` | `07-ops/ml.md` |
+| `FlagAgent` | `flag` | `feature-flags` | `ops/feature-flags` | `07-ops/feature-flags.md` |
+
+#### Finalizer Agents (KEEP - Special Logic)
+
+| v2.0 Agent Class | v2.0 ID | Status | Notes |
+|------------------|---------|--------|-------|
+| `SummaryAgent` | `summary` | **KEEP** | Aggregation logic, not prompt-only |
+| `StructureBuilderAgent` | `structure_builder` | **KEEP** | Directory creation logic |
+| `WriteSpecsAgent` | `write_specs` | **KEEP** | File writing logic |
+| `AuditReportAgent` | `audit_report` | **KEEP** | Audit mode specific |
+| `CommitPushAgent` | `commit_push` | **KEEP** | Git operations |
+| `ApplyChangesAgent` | `apply_changes` | **KEEP** | Apply command |
+| `SubmoduleCheckAgent` | `submodule_check` | **KEEP** | Git submodule logic |
+| `BootstrapAgent` | `bootstrap` | **KEEP** | Context initialization |
+
+---
+
+### Phase 0: Setup Tasks
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-001 | Create branch `feature/migration-v2.1-cleanup` | setup | `chore: init migration v2.1 branch` | coder-fullstack | - | 5m | 🔵 |
+| M-002 | Create migration tracking file `MIGRATION_V21.md` | docs | - | spec-writer | M-001 | 15m | 🔵 |
+| M-003 | Backup current specialized agents to `src/agents/_deprecated/` | code | `chore: backup specialized agents` | coder-fullstack | M-001 | 10m | 🔵 |
+
+---
+
+### Phase 1: Prompt Alignment
+
+**Goal:** Ensure all prompts exist and have correct metadata for routing.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-010 | Write spec for prompt structure requirements | spec | - | spec-writer | M-002 | 30m | 🔵 |
+| M-011 | Create missing prompt `analysis/architecture.md` | code | `feat(prompts): add architecture prompt` | coder-backend | M-010 | 45m | 🔵 |
+| M-012 | Create missing prompt `auth/detect-authz.md` | code | `feat(prompts): add authorization prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-013 | Create missing prompt `ops/deployment.md` | code | `feat(prompts): add deployment prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-014 | Create missing prompt `ops/cicd.md` | code | `feat(prompts): add cicd prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-015 | Create missing prompt `ops/kubernetes.md` | code | `feat(prompts): add kubernetes prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-016 | Create missing prompt `ops/monitoring.md` | code | `feat(prompts): add monitoring prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-017 | Create missing prompt `ops/feature-flags.md` | code | `feat(prompts): add feature-flags prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-018 | Create missing prompt `ops/ml-services.md` | code | `feat(prompts): add ml-services prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-019 | Create missing prompt `security/prompt-injection.md` | code | `feat(prompts): add prompt-injection prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-020 | Create missing prompt `analysis/summary.md` | code | `feat(prompts): add summary prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-021 | Create missing prompt `ui/analyze-state.md` | code | `feat(prompts): add state analysis prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-022 | Create missing prompt `ui/analyze-routing.md` | code | `feat(prompts): add routing analysis prompt` | coder-backend | M-010 | 30m | 🔵 |
+| M-023 | Write tests for prompt loading (all new prompts) | test | `test(prompts): add loading tests` | test-writer | M-011-M-022 | 60m | 🔵 |
+| M-024 | Run prompt loading tests, fix issues | qa | - | tester | M-023 | 30m | 🔵 |
+
+---
+
+### Phase 2: PromptRegistry Enhancement
+
+**Goal:** Add `produces` field to PromptDefinition for proper routing.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-030 | Write spec for PromptRegistry produces matching | spec | - | spec-writer | M-024 | 30m | 🔵 |
+| M-031 | Add `produces` field to `PromptDefinition` type | code | `feat(types): add produces to PromptDefinition` | coder-backend | M-030 | 30m | 🔵 |
+| M-032 | Update `PromptRegistry.findApplicable()` to filter by produces | code | `feat(registry): filter by produces` | coder-backend | M-031 | 45m | 🔵 |
+| M-033 | Add `produces` metadata to all analysis prompts | code | `feat(prompts): add produces metadata` | coder-backend | M-032 | 60m | 🔵 |
+| M-034 | Write tests for PromptRegistry produces filtering | test | `test(registry): produces filtering` | test-writer | M-030 | 45m | 🔵 |
+| M-035 | Run PromptRegistry tests, validate filtering | qa | - | tester | M-032,M-034 | 30m | 🔵 |
+
+---
+
+### Phase 3: PromptRouter Fixes
+
+**Goal:** Fix routing to match agent IDs to prompt produces.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-040 | Write spec for PromptRouter agent-to-prompt mapping | spec | - | spec-writer | M-035 | 30m | 🔵 |
+| M-041 | Update `PromptRouter.selectPrompt()` to use new mapping | code | `fix(router): agent-to-prompt mapping` | coder-backend | M-040 | 45m | 🔵 |
+| M-042 | Add fallback mechanism for unmapped agents | code | `feat(router): add fallback for unmapped` | coder-backend | M-041 | 30m | 🔵 |
+| M-043 | Update PromptRouter to handle v2.0 -> v2.1 ID aliases | code | `feat(router): add v2.0 ID aliases` | coder-backend | M-042 | 45m | 🔵 |
+| M-044 | Write tests for PromptRouter mapping | test | `test(router): agent mapping tests` | test-writer | M-040 | 45m | 🔵 |
+| M-045 | Run PromptRouter tests, validate all mappings | qa | - | tester | M-043,M-044 | 30m | 🔵 |
+
+---
+
+### Phase 4: src/index.ts Cleanup
+
+**Goal:** Remove specialized agent imports and registration, use only GenericAnalysisAgent.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-050 | Write spec for index.ts refactoring | spec | - | spec-writer | M-045 | 30m | 🔵 |
+| M-051 | Remove imports for deprecated agents (lines 40-58) | code | `refactor(index): remove deprecated imports` | coder-backend | M-050 | 15m | 🔵 |
+| M-052 | Update `specAgents` array to only include finalizers (lines 152-185) | code | `refactor(index): update specAgents array` | coder-backend | M-051 | 30m | 🔵 |
+| M-053 | Update delegation tool to use GenericAnalysisAgent | code | `refactor(index): update delegation tool` | coder-backend | M-052 | 30m | 🔵 |
+| M-054 | Update agentTools dynamic map for new agent IDs | code | `refactor(index): update agentTools map` | coder-backend | M-053 | 45m | 🔵 |
+| M-055 | Write tests for plugin initialization | test | `test(index): plugin init tests` | test-writer | M-050 | 45m | 🔵 |
+| M-056 | Run plugin initialization tests | qa | - | tester | M-054,M-055 | 30m | 🔵 |
+
+---
+
+### Phase 5: SmartDAGPlanner Hybrid Logic Removal
+
+**Goal:** Remove legacy compatibility code, use only prompt-driven approach.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-060 | Write spec for SmartDAGPlanner cleanup | spec | - | spec-writer | M-056 | 30m | 🔵 |
+| M-061 | Remove hardcoded agent instantiation from selectAgents() | code | `refactor(planner): remove hardcoded agents` | coder-backend | M-060 | 45m | 🔵 |
+| M-062 | Update shouldSkipAgent() to use only feature flags | code | `refactor(planner): simplify skip logic` | coder-backend | M-061 | 30m | 🔵 |
+| M-063 | Remove legacy fallback in assignPrompts() | code | `refactor(planner): remove legacy fallbacks` | coder-backend | M-062 | 30m | 🔵 |
+| M-064 | Simplify resolveDependencies() for v2.1 only | code | `refactor(planner): simplify dependencies` | coder-backend | M-063 | 30m | 🔵 |
+| M-065 | Write tests for SmartDAGPlanner | test | `test(planner): dag planning tests` | test-writer | M-060 | 60m | 🔵 |
+| M-066 | Run SmartDAGPlanner tests | qa | - | tester | M-064,M-065 | 30m | 🔵 |
+
+---
+
+### Phase 6: Orchestrator Simplification
+
+**Goal:** Remove hybrid mode detection, use only SmartDAG path.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-070 | Write spec for orchestrator simplification | spec | - | spec-writer | M-066 | 30m | 🔵 |
+| M-071 | Remove `useV2` flag handling (lines 172-173) | code | `refactor(orchestrator): remove useV2 flag` | coder-backend | M-070 | 15m | 🔵 |
+| M-072 | Remove coreAgents hardcoded list (lines 199-201) | code | `refactor(orchestrator): dynamic core agents` | coder-backend | M-071 | 30m | 🔵 |
+| M-073 | Simplify GenericAnalysisAgent registration loop | code | `refactor(orchestrator): simplify agent registration` | coder-backend | M-072 | 30m | 🔵 |
+| M-074 | Remove legacy DAG fallback (lines 232-235) | code | `refactor(orchestrator): remove legacy DAG` | coder-backend | M-073 | 15m | 🔵 |
+| M-075 | Update version output to always return 2.2.0 | code | `refactor(orchestrator): version 2.2.0` | coder-backend | M-074 | 10m | 🔵 |
+| M-076 | Write tests for orchestrator | test | `test(orchestrator): orchestration tests` | test-writer | M-070 | 60m | 🔵 |
+| M-077 | Run orchestrator tests | qa | - | tester | M-075,M-076 | 30m | 🔵 |
+
+---
+
+### Phase 7: RepoSpecZeroAgent Base Class Deprecation
+
+**Goal:** Mark base class as deprecated, ensure no new usage.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-080 | Write spec for base class deprecation | spec | - | spec-writer | M-077 | 20m | 🔵 |
+| M-081 | Add @deprecated JSDoc to RepoSpecZeroAgent | code | `refactor(agents): deprecate RepoSpecZeroAgent` | coder-backend | M-080 | 15m | 🔵 |
+| M-082 | Update exports in index.ts to not export deprecated class | code | `refactor(index): remove deprecated exports` | coder-backend | M-081 | 15m | 🔵 |
+| M-083 | Write deprecation migration guide | docs | - | spec-writer | M-082 | 30m | 🔵 |
+| M-084 | Write tests to ensure deprecated classes not instantiated | test | `test(agents): deprecation tests` | test-writer | M-080 | 30m | 🔵 |
+| M-085 | Run deprecation tests | qa | - | tester | M-082,M-084 | 15m | 🔵 |
+
+---
+
+### Phase 8: Prompt Loading Regression Tests
+
+**Goal:** Ensure zero regressions on prompt loading after refactoring.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-090 | Write spec for regression test suite | spec | - | spec-writer | M-085 | 30m | 🔵 |
+| M-091 | Create test: `entities` prompt loads correctly | test | `test(regression): entities prompt` | test-writer | M-090 | 20m | 🔵 |
+| M-092 | Create test: `api-rest` prompt loads correctly | test | `test(regression): api-rest prompt` | test-writer | M-090 | 20m | 🔵 |
+| M-093 | Create test: `database` prompt loads correctly | test | `test(regression): database prompt` | test-writer | M-090 | 20m | 🔵 |
+| M-094 | Create test: `authentication` prompt loads correctly | test | `test(regression): auth prompt` | test-writer | M-090 | 20m | 🔵 |
+| M-095 | Create test: `deployment` prompt loads correctly | test | `test(regression): deployment prompt` | test-writer | M-090 | 20m | 🔵 |
+| M-096 | Create test: GenericAnalysisAgent receives correct prompt | test | `test(regression): agent prompt injection` | test-writer | M-090 | 30m | 🔵 |
+| M-097 | Create test: DiagramGenerator extracts from loaded prompts | test | `test(regression): diagram extraction` | test-writer | M-090 | 30m | 🔵 |
+| M-098 | Run all regression tests | qa | - | tester | M-091-M-097 | 45m | 🔵 |
+
+---
+
+### Phase 9: End-to-End Integration Tests
+
+**Goal:** Full pipeline test with real repository.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-100 | Write spec for e2e test suite | spec | - | spec-writer | M-098 | 30m | 🔵 |
+| M-101 | Create mock repository for testing | code | `test(e2e): create mock repo` | test-writer | M-100 | 30m | 🔵 |
+| M-102 | Create e2e test: analyze backend repo | test | `test(e2e): backend repo analysis` | test-writer | M-101 | 45m | 🔵 |
+| M-103 | Create e2e test: analyze frontend repo | test | `test(e2e): frontend repo analysis` | test-writer | M-101 | 45m | 🔵 |
+| M-104 | Create e2e test: analyze fullstack repo | test | `test(e2e): fullstack repo analysis` | test-writer | M-101 | 45m | 🔵 |
+| M-105 | Create e2e test: prompt versions tracked | test | `test(e2e): prompt versioning` | test-writer | M-101 | 30m | 🔵 |
+| M-106 | Run e2e test suite | qa | - | tester | M-102-M-105 | 60m | 🔵 |
+
+---
+
+### Phase 10: Cleanup & Documentation
+
+**Goal:** Remove deprecated files, update documentation.
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-110 | Write spec for cleanup tasks | spec | - | spec-writer | M-106 | 20m | 🔵 |
+| M-111 | Delete deprecated agent files from `src/agents/spec-zero/` | code | `chore: remove deprecated agents` | coder-fullstack | M-110 | 15m | 🔵 |
+| M-112 | Delete backup folder `src/agents/_deprecated/` | code | `chore: remove agent backups` | coder-fullstack | M-111 | 5m | 🔵 |
+| M-113 | Update README.md with v2.2 architecture | docs | - | spec-writer | M-112 | 45m | 🔵 |
+| M-114 | Update CHANGELOG.md with v2.2 changes | docs | - | spec-writer | M-113 | 30m | 🔵 |
+| M-115 | Create MIGRATION_V21_TO_V22.md guide | docs | - | spec-writer | M-114 | 30m | 🔵 |
+
+---
+
+### Final Tasks
+
+| ID | Task | Type | Commit | Agent | Deps | Est. | Status |
+|----|------|------|--------|-------|------|------|--------|
+| M-120 | Integration test: full analysis pipeline | qa | - | tester | M-115 | 60m | 🔵 |
+| M-121 | Code review: all changes | review | - | reviewer | M-120 | 60m | 🔵 |
+| M-122 | Bump version to 2.2.0 in package.json | code | `chore: bump version to 2.2.0` | coder-fullstack | M-121 | 5m | 🔵 |
+| M-123 | Build and verify dist output | qa | - | tester | M-122 | 15m | 🔵 |
+| M-124 | Create PR to main | pr | - | coder-fullstack | M-123 | 10m | 🔵 |
+| M-125 | Merge to main after approval | merge | `chore: merge migration v2.1 cleanup` | coder-fullstack | M-124 | 5m | 🔵 |
+
+---
+
+### Test Strategy per Phase
+
+#### Phase 1 (Prompts)
+- **Unit Test:** Each prompt file loads without error
+- **Validation:** Frontmatter version comment exists
+- **Assertion:** PromptLoader returns valid content and metadata
+
+#### Phase 2 (Registry)
+- **Unit Test:** `findApplicable()` returns prompts matching produces
+- **Integration Test:** Registry + Loader work together
+- **Edge Case:** Multiple prompts produce same output
+
+#### Phase 3 (Router)
+- **Unit Test:** `selectPrompt()` maps agent ID to correct prompt
+- **Integration Test:** Router + Registry + Loader chain
+- **Edge Case:** v2.0 agent IDs still work via aliases
+
+#### Phase 4 (index.ts)
+- **Unit Test:** Plugin initializes without deprecated imports
+- **Integration Test:** Tools registered correctly
+- **Assertion:** `specAgents` contains only finalizers
+
+#### Phase 5 (SmartDAGPlanner)
+- **Unit Test:** `plan()` returns correct agents for features
+- **Integration Test:** Planner + FeatureDetector
+- **Assertion:** No hardcoded agent references remain
+
+#### Phase 6 (Orchestrator)
+- **Unit Test:** `process()` uses SmartDAG path only
+- **Integration Test:** Orchestrator + Planner + Agents
+- **E2E Test:** Full analysis with mock repo
+
+#### Phase 7 (Deprecation)
+- **Static Analysis:** No imports of deprecated classes
+- **Runtime Test:** Deprecated classes not instantiated
+- **Documentation:** Migration guide complete
+
+#### Phase 8 (Regression)
+- **Golden Output Test:** Compare output with baseline
+- **Prompt Hash Test:** Verify hash changes detected
+- **Version Test:** Correct prompt versions in metadata
+
+#### Phase 9 (E2E)
+- **Full Pipeline:** analyze -> plan -> execute -> output
+- **Output Validation:** All expected files generated
+- **Metadata Check:** `analysis_audit.md` contains correct info
+
+---
+
+### Parallel Execution Map
+
+```
+Phase 0:  M-001 -> M-002 -> M-003
+          |
+          v
+Phase 1:  M-010 -> [M-011..M-022 parallel] -> M-023 -> M-024
+                                              |
+Phase 2:  M-030 -> M-031 -> M-032 -> M-033 ---|-> M-034 -> M-035
+                                              |
+Phase 3:  M-040 -> M-041 -> M-042 -> M-043 ---|-> M-044 -> M-045
+                                              |
+Phase 4:  M-050 -> M-051 -> M-052 -> M-053 -> M-054 --|-> M-055 -> M-056
+                                                      |
+Phase 5:  M-060 -> M-061 -> M-062 -> M-063 -> M-064 --|-> M-065 -> M-066
+                                                      |
+Phase 6:  M-070 -> M-071 -> M-072 -> M-073 -> M-074 -> M-075 --|-> M-076 -> M-077
+                                                               |
+Phase 7:  M-080 -> M-081 -> M-082 -> M-083 -------------------|-> M-084 -> M-085
+                                                               |
+Phase 8:  M-090 -> [M-091..M-097 parallel] --------------------|-> M-098
+                                                               |
+Phase 9:  M-100 -> M-101 -> [M-102..M-105 parallel] -----------|-> M-106
+                                                               |
+Phase 10: M-110 -> M-111 -> M-112 -> M-113 -> M-114 -> M-115 --|
+                                                               |
+Final:    M-120 -> M-121 -> M-122 -> M-123 -> M-124 -> M-125 <-+
+```
+
+---
+
+### Files to Delete (18 specialized agents)
+
+| File | v2.0 ID | Replaced by |
+|------|---------|-------------|
+| `src/agents/spec-zero/core/overview.agent.ts` | `overview` | GenericAnalysisAgent + `analysis/overview` |
+| `src/agents/spec-zero/core/module.agent.ts` | `module` | GenericAnalysisAgent + `analysis/modules` |
+| `src/agents/spec-zero/core/entity.agent.ts` | `entity` | GenericAnalysisAgent + `analysis/entities` |
+| `src/agents/spec-zero/data/db.agent.ts` | `db` | GenericAnalysisAgent + `data/detect-schema` |
+| `src/agents/spec-zero/data/data-map.agent.ts` | `data_map` | GenericAnalysisAgent + `data/detect-mapping` |
+| `src/agents/spec-zero/data/event.agent.ts` | `event` | GenericAnalysisAgent + `data/detect-events` |
+| `src/agents/spec-zero/integration/api.agent.ts` | `api` | GenericAnalysisAgent + `api/detect-endpoints` |
+| `src/agents/spec-zero/integration/dependency.agent.ts` | `dependency` | GenericAnalysisAgent + `integration/dependencies` |
+| `src/agents/spec-zero/integration/service-dep.agent.ts` | `service_dep` | GenericAnalysisAgent + `integration/detect-services` |
+| `src/agents/spec-zero/security/auth.agent.ts` | `auth` | GenericAnalysisAgent + `auth/detect-auth` |
+| `src/agents/spec-zero/security/authz.agent.ts` | `authz` | GenericAnalysisAgent + `auth/detect-authz` |
+| `src/agents/spec-zero/security/security.agent.ts` | `security` | GenericAnalysisAgent + `analysis/security-audit` |
+| `src/agents/spec-zero/security/prompt-sec.agent.ts` | `prompt_sec` | GenericAnalysisAgent + `security/prompt-injection` |
+| `src/agents/spec-zero/ops/deployment.agent.ts` | `deployment` | GenericAnalysisAgent + `ops/deployment` |
+| `src/agents/spec-zero/ops/monitor.agent.ts` | `monitor` | GenericAnalysisAgent + `ops/monitoring` |
+| `src/agents/spec-zero/ops/ml.agent.ts` | `ml` | GenericAnalysisAgent + `ops/ml-services` |
+| `src/agents/spec-zero/ops/flag.agent.ts` | `flag` | GenericAnalysisAgent + `ops/feature-flags` |
+| `src/agents/spec-zero/base.ts` | - | Mark as @deprecated |
+
+---
+
+### Summary
+
+| Metric | Value |
+|--------|-------|
+| **Total Tasks** | 66 |
+| **Phases** | 10 + Setup + Final |
+| **Estimated Duration** | ~3-4 days |
+| **Critical Path** | M-001 -> M-066 -> M-077 -> M-106 -> M-125 |
+| **Files to Delete** | 18 agent files |
+| **Files to Create** | 12 new prompts |
+| **Test Coverage Target** | 90% on new code |
+
+---
+
+### Risk Mitigation
+
+1. **Breaking Changes:** All v2.0 IDs have aliases in Phase 3
+2. **Data Loss:** Backup in Phase 0 (M-003)
+3. **Test Failures:** Incremental testing per phase
+4. **Rollback:** Feature branch allows easy revert
+
+---
+
+### Definition of Done
+
+- [ ] All 18 specialized agents removed from codebase
+- [ ] All prompts have `produces` metadata
+- [ ] GenericAnalysisAgent handles all analysis types
+- [ ] PromptRouter correctly maps agent IDs to prompts
+- [ ] SmartDAGPlanner has no hardcoded agent references
+- [ ] E2E tests pass for backend, frontend, fullstack repos
+- [ ] No regression in prompt loading
+- [ ] Documentation updated
+- [ ] Version bumped to 2.2.0

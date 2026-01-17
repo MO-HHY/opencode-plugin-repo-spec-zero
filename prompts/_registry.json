@@ -101,6 +101,30 @@
       "optional": true
     },
     {
+      "id": "data/data-mapping",
+      "category": "analysis",
+      "applicableTo": ["backend", "fullstack"],
+      "requiredFeatures": [],
+      "dependsOn": ["analysis/entities", "data/detect-schema"],
+      "produces": ["data-mapping"],
+      "diagrams": ["erd"],
+      "outputFile": "04-data/data-mapping.md",
+      "priority": 69,
+      "optional": true
+    },
+    {
+      "id": "data/events",
+      "category": "analysis",
+      "applicableTo": ["backend", "fullstack"],
+      "requiredFeatures": ["has_events"],
+      "dependsOn": ["analysis/entities"],
+      "produces": ["events", "event-architecture"],
+      "diagrams": ["sequence", "flowchart"],
+      "outputFile": "04-data/events.md",
+      "priority": 68,
+      "optional": true
+    },
+    {
       "id": "auth/detect-auth",
       "category": "analysis",
       "applicableTo": ["backend", "fullstack"],
@@ -175,6 +199,42 @@
       "optional": false
     },
     {
+      "id": "ops/feature-flags",
+      "category": "analysis",
+      "applicableTo": ["backend", "frontend", "fullstack"],
+      "requiredFeatures": ["has_feature_flags"],
+      "dependsOn": ["analysis/overview"],
+      "produces": ["feature-flags", "configuration"],
+      "diagrams": [],
+      "outputFile": "07-ops/feature-flags.md",
+      "priority": 43,
+      "optional": true
+    },
+    {
+      "id": "ops/ml-services",
+      "category": "analysis",
+      "applicableTo": ["backend", "fullstack", "library"],
+      "requiredFeatures": ["has_ml"],
+      "dependsOn": ["analysis/overview"],
+      "produces": ["ml-services", "ai-integrations"],
+      "diagrams": ["sequence"],
+      "outputFile": "07-ops/ml-services.md",
+      "priority": 42,
+      "optional": true
+    },
+    {
+      "id": "ops/monitoring",
+      "category": "analysis",
+      "applicableTo": ["backend", "frontend", "fullstack"],
+      "requiredFeatures": [],
+      "dependsOn": ["analysis/architecture"],
+      "produces": ["monitoring", "observability", "logging"],
+      "diagrams": ["flowchart"],
+      "outputFile": "07-ops/monitoring.md",
+      "priority": 41,
+      "optional": true
+    },
+    {
       "id": "ops/deployment",
       "category": "analysis",
       "applicableTo": ["backend", "fullstack"],
@@ -208,6 +268,18 @@
       "diagrams": ["flowchart"],
       "outputFile": "05-auth/security.md",
       "priority": 30,
+      "optional": true
+    },
+    {
+      "id": "security/prompt-security",
+      "category": "audit",
+      "applicableTo": ["backend", "fullstack"],
+      "requiredFeatures": ["has_llm"],
+      "dependsOn": ["analysis/security-audit"],
+      "produces": ["prompt-security"],
+      "diagrams": [],
+      "outputFile": "05-auth/prompt-security.md",
+      "priority": 29,
       "optional": true
     },
     {

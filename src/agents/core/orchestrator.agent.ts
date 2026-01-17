@@ -19,6 +19,28 @@ import { TemplateLoader } from '../../core/template-loader.js';
 import { DiagramGenerator } from '../../core/diagram-generator.js';
 import { GenericAnalysisAgent } from '../generic-analysis.agent.js';
 
+// v2.1.0: ID mapping for legacy DAG nodes to new Prompt Registry IDs
+const LEGACY_ID_MAP: Record<string, string> = {
+    'overview': 'analysis/overview',
+    'module': 'analysis/modules',
+    'entity': 'analysis/entities',
+    'db': 'data/detect-schema',
+    'data_map': 'data/data-mapping',
+    'event': 'data/events',
+    'api': 'api/detect-endpoints',
+    'dependency': 'integration/dependencies',
+    'service_dep': 'integration/detect-services',
+    'auth': 'auth/detect-auth',
+    'authz': 'auth/detect-authz',
+    'security': 'analysis/security-audit',
+    'prompt_sec': 'security/prompt-security',
+    'deployment': 'ops/deployment',
+    'monitor': 'ops/monitoring',
+    'ml': 'ops/ml-services',
+    'flag': 'ops/feature-flags',
+    'summary': 'analysis/summary'
+};
+
 export class RepoSpecZeroOrchestrator extends BaseAgent {
     readonly id = 'orchestrator';
     readonly name = 'RepoSpecZero Orchestrator';
@@ -161,28 +183,24 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
             repoStructure
         });
 
-        // 6. Build agent map from subAgents
-        let agentMap = new Map(this.subAgents.map(a => [a.id, a]));
-
-        // v2.1.0: Get options from params
+        // 6. Select initial DAG
         const useSmartDag = params.smartDag !== false; // Default true
         const diagramMode = String(params.diagrams || 'both');
         const templateOverride = params.template ? String(params.template) : undefined;
         const skipAgents = Array.isArray(params.skipAgents) ? params.skipAgents : [];
-        const useV2 = params.useV2 !== false; // Still needed for legacy mode
+        const useV2 = params.useV2 !== false;
         const specsFolder = String(params.specsFolder || 'specs');
         const noPush = Boolean(params.noPush);
         const pluginVersion = String(params.pluginVersion || '2.1.0');
 
         let initialDag: DAGDefinition;
+        let plannedAgents: PlannedAgent[] = [];
 
         if (useSmartDag) {
             await this.notify(client, `Planning dynamic DAG with SmartDAGPlanner...`);
             const plannedDag = planner.planFromFeatures(detectedFeatures);
-            
             await this.notify(client, `Planned ${plannedDag.agents.length} agents across ${plannedDag.layers.length} layers.`);
-
-            // Convert PlannedDAG to DAGDefinition
+            
             initialDag = {
                 version: plannedDag.version,
                 nodes: plannedDag.agents.map(pa => ({
@@ -192,49 +210,77 @@ export class RepoSpecZeroOrchestrator extends BaseAgent {
                     optional: pa.optional
                 }))
             };
-
-            // Register dynamic GenericAnalysisAgents
-            for (const pa of plannedDag.agents) {
-                // Skip core agents that are already in the registry
-                const coreAgents = [
-                    'bootstrap', 'submodule_check', 'summary', 'structure_builder', 
-                    'write_specs', 'commit_push', 'audit_report', 'apply_changes'
-                ];
-                if (coreAgents.includes(pa.id)) {
-                    continue;
-                }
-
-                // Skip explicitly requested agents
-                if (skipAgents.includes(pa.id)) {
-                    continue;
-                }
-
-                // Apply overrides
-                const agentPa: PlannedAgent = {
-                    ...pa,
-                    templateId: templateOverride || pa.templateId
-                };
-                
-                const dynamicAgent = new GenericAnalysisAgent(
-                    agentPa,
-                    router,
-                    templateLoader,
-                    diagramGenerator
-                );
-                
-                // Inherit skills from orchestrator
-                for (const [skillId, executor] of this.skills.entries()) {
-                    dynamicAgent.registerSkill(skillId, executor);
-                }
-                
-                agentMap.set(pa.id, dynamicAgent);
-            }
+            plannedAgents = plannedDag.agents;
         } else {
-            // v2.0.0: Select initial DAG
             initialDag = useV2 ? GENERATION_DAG : DEFAULT_DAG;
+            await this.notify(client, `Using static DAG v${initialDag.version}...`);
+            
+            // v2.1.0: Convert static DAG nodes to PlannedAgents for the GenericAnalysisAgent
+            plannedAgents = initialDag.nodes.map(node => {
+                const promptId = LEGACY_ID_MAP[node.agentId] || node.agentId;
+                const promptDef = registry.get(promptId);
+                
+                return {
+                    id: node.agentId,
+                    promptId: promptId,
+                    templateId: promptDef?.templateId,
+                    dependencies: node.dependencies,
+                    parallel: node.parallel || false,
+                    optional: node.optional || false,
+                    diagrams: promptDef?.diagrams || [],
+                    outputFile: promptDef?.outputFile || '',
+                    layer: 0 // Not strictly needed for DAGExecutor
+                };
+            });
         }
 
-        // 7. Create DAG Executor with progress tracking
+        // 7. Build agent map (v2.1.0: Core + Generic Analysis Agents)
+        const agentMap = new Map<string, BaseAgent>();
+        
+        // Add Core Agents from subAgents
+        for (const agent of this.subAgents) {
+            agentMap.set(agent.id, agent);
+        }
+
+        // Register dynamic GenericAnalysisAgents for analysis nodes
+        const coreAgentIds = [
+            'bootstrap', 'submodule_check', 'summary', 'structure_builder', 
+            'write_specs', 'commit_push', 'audit_report', 'apply_changes'
+        ];
+
+        for (const pa of plannedAgents) {
+            // Skip if it's a core agent already in map
+            if (coreAgentIds.includes(pa.id) && agentMap.has(pa.id)) {
+                continue;
+            }
+
+            // Skip if explicitly requested
+            if (skipAgents.includes(pa.id)) {
+                continue;
+            }
+
+            // Apply overrides
+            const agentPa: PlannedAgent = {
+                ...pa,
+                templateId: templateOverride || pa.templateId
+            };
+            
+            const dynamicAgent = new GenericAnalysisAgent(
+                agentPa,
+                router,
+                templateLoader,
+                diagramGenerator
+            );
+            
+            // Inherit skills from orchestrator
+            for (const [skillId, executor] of this.skills.entries()) {
+                dynamicAgent.registerSkill(skillId, executor);
+            }
+            
+            agentMap.set(pa.id, dynamicAgent);
+        }
+
+        // 8. Create DAG Executor with progress tracking
         const startTime = Date.now();
         const executionLog: Array<{ agent: string, status: 'success' | 'failed' | 'skip', durationMs: number, message?: string }> = [];
 

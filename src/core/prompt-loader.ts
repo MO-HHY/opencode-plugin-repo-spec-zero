@@ -44,8 +44,9 @@ export class PromptLoader {
             return this.cache.get(cacheKey)!;
         }
 
-        // Try type-specific, then generic, then shared
+        // Try root, then type-specific, then generic, then shared
         const paths = [
+            path.join(this.promptsDir, `${promptId}.md`),
             path.join(this.promptsDir, repoType, `${promptId}.md`),
             path.join(this.promptsDir, 'generic', `${promptId}.md`),
             path.join(this.promptsDir, 'shared', `${promptId}.md`)

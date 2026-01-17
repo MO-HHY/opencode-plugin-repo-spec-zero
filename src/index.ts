@@ -2,10 +2,11 @@ import { z } from 'zod';
 import type { Plugin, PluginInput, Hooks } from '@opencode-ai/plugin';
 import { AgentRegistry, SkillExecutor } from './agents/base.js';
 
-// Core Infrastructure (NEW)
+// v2.1.0: Core Components
 export { SharedContext, type ContextParams, type AgentOutput, type KeyFile } from './core/context.js';
 export { FeatureDetector } from './core/feature-detector.js';
 export { PromptLoader, createPromptLoader, type PromptMetadata, type LoadedPrompt } from './core/prompt-loader.js';
+export { PromptRegistry, createPromptRegistry } from './core/prompt-registry.js';
 export { DAGExecutor, DEFAULT_DAG, GENERATION_DAG, AUDIT_DAG, selectDAG, createCustomDAG, type DAGNode, type DAGDefinition } from './core/dag-executor.js';
 export { OutputValidator, validateOutput, validateAndFix } from './core/output-validator.js';
 export { SmartDAGPlanner } from './core/smart-dag-planner.js';
@@ -37,33 +38,16 @@ import { RepoSpecZeroOrchestrator } from './agents/core/orchestrator.agent.js';
 import { TaskSpecAgent } from './agents/core/task-spec.agent.js';
 import { BootstrapAgent } from './agents/core/bootstrap.agent.js';
 
-// SpecZero Agents
-import { OverviewAgent } from './agents/spec-zero/core/overview.agent.js';
-import { ModuleAgent } from './agents/spec-zero/core/module.agent.js';
-import { EntityAgent } from './agents/spec-zero/core/entity.agent.js';
-import { DbAgent } from './agents/spec-zero/data/db.agent.js';
-import { DataMapAgent } from './agents/spec-zero/data/data-map.agent.js';
-import { EventAgent } from './agents/spec-zero/data/event.agent.js';
-import { ApiAgent } from './agents/spec-zero/integration/api.agent.js';
-import { DependencyAgent } from './agents/spec-zero/integration/dependency.agent.js';
-import { ServiceDepAgent } from './agents/spec-zero/integration/service-dep.agent.js';
-import { AuthAgent } from './agents/spec-zero/security/auth.agent.js';
-import { AuthzAgent } from './agents/spec-zero/security/authz.agent.js';
-import { SecurityAgent } from './agents/spec-zero/security/security.agent.js';
-import { PromptSecAgent } from './agents/spec-zero/security/prompt-sec.agent.js';
-import { DeploymentAgent } from './agents/spec-zero/ops/deployment.agent.js';
-import { MonitorAgent } from './agents/spec-zero/ops/monitor.agent.js';
-import { MlAgent } from './agents/spec-zero/ops/ml.agent.js';
-import { FlagAgent } from './agents/spec-zero/ops/flag.agent.js';
-import { SummaryAgent } from './agents/spec-zero/finalizer/summary.agent.js';
-import { StructureBuilderAgent } from './agents/spec-zero/finalizer/structure-builder.agent.js';
-
-// v2.0.0: New Finalizer Agents
+// v2.1.0: Core Infrastructure Agents
 import { SubmoduleCheckAgent } from './agents/core/submodule-check.agent.js';
+import { StructureBuilderAgent } from './agents/spec-zero/finalizer/structure-builder.agent.js';
 import { WriteSpecsAgent } from './agents/spec-zero/finalizer/write-specs.agent.js';
 import { AuditReportAgent } from './agents/spec-zero/finalizer/audit-report.agent.js';
 import { ApplyChangesAgent } from './agents/spec-zero/finalizer/apply-changes.agent.js';
 import { CommitPushAgent } from './agents/spec-zero/finalizer/commit-push.agent.js';
+
+// Core v2.1.0: Registry
+import { PromptRegistry } from './core/prompt-registry.js';
 
 /**
  * Helper to convert agent result to string for OpenCode tool response.
@@ -109,6 +93,9 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
     const nativeLLMSkill = new NativeLLMSkill(client);
     const readRepoFileSkill = new ReadRepoFileSkill();
 
+    const pluginRoot = process.cwd();
+    const registry = new PromptRegistry(pluginRoot);
+
     // Writer Skill Executor (Mock for internal writes, but orchestrated via Node fs usually)
     const writerSkillExecutor: SkillExecutor = {
         execute: async (params: any): Promise<any> => {
@@ -148,7 +135,7 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
         taskSpecAgent
     );
 
-    // 3. Register SpecZero Agents as Sub-Agents (including new Bootstrap and Summary)
+    // 3. Register SpecZero Agents as Sub-Agents (v2.1.0: Core agents only)
     const specAgents = [
         // v2.0.0: Layer 0 - Submodule management
         new SubmoduleCheckAgent(),
@@ -156,28 +143,8 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
         // Layer 1: Bootstrap
         new BootstrapAgent(),     // Layer 1
         
-        // Layers 2-8: Analysis agents
-        new OverviewAgent(),
-        new ModuleAgent(),
-        new EntityAgent(),
-        new DbAgent(),
-        new DataMapAgent(),
-        new EventAgent(),
-        new ApiAgent(),
-        new DependencyAgent(),
-        new ServiceDepAgent(),
-        new AuthAgent(),
-        new AuthzAgent(),
-        new SecurityAgent(),
-        new PromptSecAgent(),
-        new DeploymentAgent(),
-        new MonitorAgent(),
-        new MlAgent(),
-        new FlagAgent(),
-        new SummaryAgent(),        // Layer 8 (Summary)
+        // v2.0.0: Layer 9-12 - Finalizers & Core
         new StructureBuilderAgent(), // Layer 9 (Structure Builder)
-        
-        // v2.0.0: Layer 9-10 - Finalizers
         new WriteSpecsAgent(),     // Generation mode
         new AuditReportAgent(),    // Audit mode
         new CommitPushAgent(),     // Both modes
@@ -194,9 +161,10 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
     // Also register skills to orchestrator
     orchestrator.registerSkill('repo_spec_zero_build_tree', treeSkillExecutor);
 
-    // 4. Build Agent Tools Dynamic Map
+    // 4. Build Agent Tools Dynamic Map (v2.1.0: Load from PromptRegistry)
     const agentTools: Record<string, any> = {};
 
+    // Register tools for Core Agents
     specAgents.forEach(agent => {
         const toolName = `repo_spec_zero_agent_${agent.id}`;
         agentTools[toolName] = {
@@ -209,7 +177,6 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
                 contextData: z.string().describe('JSON string of previous agent results if needed.').optional()
             },
             execute: async (params: any): Promise<string> => {
-                // DEFENSIVE: Ensure all string params have defaults to prevent undefined.split() errors
                 const safeParams = {
                     ...params,
                     baseDir: String(params.baseDir || process.cwd()),
@@ -231,33 +198,76 @@ const RepoSpecZeroPlugin: Plugin = async (input: PluginInput): Promise<Hooks> =>
         };
     });
 
+    // Register tools for all prompts in Registry (Dynamic Analysis Agents)
+    registry.list().forEach(promptDef => {
+        // Map slash to underscore for tool name (e.g. analysis/overview -> analysis_overview)
+        const toolId = promptDef.id.replace(/\//g, '_');
+        const toolName = `repo_spec_zero_agent_${toolId}`;
+        
+        // Skip if already registered as core agent
+        if (agentTools[toolName]) return;
+
+        agentTools[toolName] = {
+            description: `[Analysis] ${promptDef.id}: ${promptDef.category} analysis for ${promptDef.produces.join(', ')}`,
+            args: {
+                repoPath: z.string().describe('Path to the repository.').optional(),
+                contextData: z.string().describe('JSON string of previous results.').optional()
+            },
+            execute: async (params: any): Promise<string> => {
+                return `Analysis agent ${promptDef.id} is available via the 'repo_spec_zero_analyze' tool which manages the full DAG.`;
+            }
+        };
+    });
+
     // 5. Delegation Tool
     const delegationTool = {
         'repo_spec_zero_delegate': {
             description: 'Delegate a request to a specific SpecZero sub-agent or the orchestrator.',
             args: {
                 query: z.string().describe('The user query or intent.'),
-                preferredAgent: z.string().describe('ID of the agent to delegate to (e.g. "overview", "api").').optional(),
+                preferredAgent: z.string().describe('ID of the agent to delegate to (e.g. "overview", "api", "analysis/entities").').optional(),
                 repoPath: z.string().describe('Path to the repo to contextuaize.').optional()
             },
             execute: async ({ query, preferredAgent, repoPath }: { query: string; preferredAgent?: string; repoPath?: string }): Promise<string> => {
 
                 // If preferred agent exists, call it
                 if (preferredAgent) {
-                    const toolName = `repo_spec_zero_agent_${preferredAgent}`;
+                    // Try direct ID match first, then underscore mapping
+                    let toolName = `repo_spec_zero_agent_${preferredAgent}`;
+                    if (!agentTools[toolName]) {
+                        toolName = `repo_spec_zero_agent_${preferredAgent.replace(/\//g, '_')}`;
+                    }
+
                     if (agentTools[toolName]) {
                         return await agentTools[toolName].execute({
                             baseDir: repoPath,
                             projectSlug: repoPath ? 'unknown-delegated' : undefined
                         });
                     }
+                    
+                    // Try legacy mapping
+                    const legacyMapping: Record<string, string> = {
+                        'overview': 'analysis_overview',
+                        'module': 'analysis_modules',
+                        'entity': 'analysis_entities',
+                        'db': 'data_detect-schema',
+                        'api': 'api_detect-endpoints'
+                    };
+                    const mappedId = legacyMapping[preferredAgent];
+                    if (mappedId && agentTools[`repo_spec_zero_agent_${mappedId}`]) {
+                        return await agentTools[`repo_spec_zero_agent_${mappedId}`].execute({
+                            baseDir: repoPath,
+                            projectSlug: repoPath ? 'unknown-delegated' : undefined
+                        });
+                    }
+
                     return `Error: Agent ${preferredAgent} not found.`;
                 }
 
-                // Fallback: analyze request to pick agent (Simple Router)
-                // For now, just return list of agents suggestions
-                const validAgents = specAgents.map(a => a.id).join(', ');
-                return `Auto-routing not yet implemented. Please specify 'preferredAgent'. Available: ${validAgents}`;
+                // Fallback: list all available agents (Core + Dynamic)
+                const coreIds = specAgents.map(a => a.id);
+                const dynamicIds = registry.list().map(p => p.id);
+                return `Auto-routing not yet implemented. Please specify 'preferredAgent'. \nCore: ${coreIds.join(', ')}\nAnalysis: ${dynamicIds.join(', ')}`;
             }
         }
     };
